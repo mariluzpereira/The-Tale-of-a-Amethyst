@@ -1,1 +1,196 @@
+import pygame
 
+pygame.init()
+
+# =========================
+# CLASSE BASE DE TUDO
+# =========================
+
+class Entity(pygame.sprite.Sprite):
+    def __init__(self, x, y, w, h):
+        super().__init__()
+
+        self.image = pygame.Surface((w, h))
+        self.rect = self.image.get_rect(topleft=(x, y))
+
+        self.vel_x = 0
+        self.vel_y = 0
+
+        self.gravity = 0.6
+        self.on_ground = False
+
+    def apply_gravity(self):
+        self.vel_y += self.gravity
+        self.rect.y += self.vel_y
+
+    def move(self):
+        self.rect.x += self.vel_x
+
+    def update(self):
+        self.apply_gravity()
+        self.move()
+
+
+# =========================
+# JOGADOR BASE
+# =========================
+
+class Princess(Entity):
+    def __init__(self, x, y):
+        super().__init__(x, y, 40, 60)
+
+        self.health = 5
+        self.stars = 100
+        self.speed = 5
+        self.jump_power = -12
+
+    def move_left(self):
+        self.vel_x = -self.speed
+
+    def move_right(self):
+        self.vel_x = self.speed
+
+    def stop(self):
+        self.vel_x = 0
+
+    def jump(self):
+        if self.on_ground:
+            self.vel_y = self.jump_power
+            self.on_ground = False
+
+    def take_damage(self, amount=1):
+        self.health = max(0, self.health - amount)
+
+    def basic_attack(self, mouse_pos):
+        direction = pygame.math.Vector2(mouse_pos) - self.rect.center
+        if direction.length() > 0:
+            direction = direction.normalize()
+
+        return Projectile(self.rect.centerx, self.rect.centery, direction)
+
+    def special_power(self):
+        pass
+
+
+# =========================
+# PRINCESAS
+# =========================
+
+class Safira(Princess):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.float_time = 0
+
+    def special_power(self):
+        if self.stars >= 20:
+            self.stars -= 20
+            self.float_time = 120
+
+    def apply_gravity(self):
+        if self.float_time > 0:
+            self.float_time -= 1
+            return
+        super().apply_gravity()
+
+
+class Louise(Princess):
+    def special_power(self, enemies):
+        if self.stars >= 25:
+            self.stars -= 25
+            for e in enemies:
+                e.take_damage(2)
+
+
+class Anika(Princess):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.shield = False
+        self.timer = 0
+
+    def special_power(self):
+        if self.stars >= 30:
+            self.stars -= 30
+            self.shield = True
+            self.timer = 180
+
+    def update(self):
+        super().update()
+        if self.timer > 0:
+            self.timer -= 1
+        else:
+            self.shield = False
+
+    def take_damage(self, amount=1):
+        if self.shield:
+            return
+        super().take_damage(amount)
+
+
+class Meliah(Princess):
+    def special_power(self, enemies):
+        if self.stars >= 35:
+            self.stars -= 35
+            for e in enemies:
+                e.slow_timer = 180
+
+
+# =========================
+# INIMIGOS
+# =========================
+
+class Enemy(Entity):
+    def __init__(self, x, y):
+        super().__init__(x, y, 40, 40)
+        self.health = 3
+
+    def take_damage(self, amount):
+        self.health -= amount
+        if self.health <= 0:
+            self.kill()
+
+
+class Witch(Enemy):
+    pass
+
+
+class Wasp(Enemy):
+    def update(self, player):
+        direction = pygame.math.Vector2(player.rect.center) - self.rect.center
+        if direction.length() > 0:
+            direction = direction.normalize()
+
+        self.rect.x += direction.x * 3
+        self.rect.y += direction.y * 3
+
+
+class Plant(Enemy):
+    pass
+
+
+class Boss(Enemy):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.phase = 1
+
+    def update(self):
+        if self.health < 10:
+            self.phase = 2
+
+
+# =========================
+# PROJÉTEIS
+# =========================
+
+class Projectile(pygame.sprite.Sprite):
+    def __init__(self, x, y, direction):
+        super().__init__()
+
+        self.image = pygame.Surface((10, 10))
+        self.rect = self.image.get_rect(center=(x, y))
+
+        self.direction = direction
+        self.speed = 10
+
+    def update(self):
+        self.rect.x += self.direction.x * self.speed
+        self.rect.y += self.direction.y * self.speed
