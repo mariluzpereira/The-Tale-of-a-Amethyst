@@ -2,9 +2,7 @@ import pygame
 
 pygame.init()
 
-# =========================
-# CLASSE BASE DE TUDO
-# =========================
+
 
 class Entity(pygame.sprite.Sprite):
     def __init__(self, x, y, w, h):
@@ -31,9 +29,7 @@ class Entity(pygame.sprite.Sprite):
         self.move()
 
 
-# =========================
-# JOGADOR BASE
-# =========================
+
 
 class Princess(Entity):
     def __init__(self, x, y):
@@ -72,9 +68,7 @@ class Princess(Entity):
         pass
 
 
-# =========================
-# PRINCESAS
-# =========================
+
 
 class Safira(Princess):
     def __init__(self, x, y):
@@ -134,9 +128,6 @@ class Meliah(Princess):
                 e.slow_timer = 180
 
 
-# =========================
-# INIMIGOS
-# =========================
 
 class Enemy(Entity):
     def __init__(self, x, y):
@@ -177,9 +168,6 @@ class Boss(Enemy):
             self.phase = 2
 
 
-# =========================
-# PROJÉTEIS
-# =========================
 
 class Projectile(pygame.sprite.Sprite):
     def __init__(self, x, y, direction):
