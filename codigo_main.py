@@ -31,7 +31,7 @@ class Entity(pygame.sprite.Sprite):
 
 
 
-class Princess(Entity):
+class Princesas(Entity):
     def __init__(self, x, y):
         super().__init__(x, y, 40, 60)
 
@@ -70,7 +70,7 @@ class Princess(Entity):
 
 
 
-class Safira(Princess):
+class Safira(Princesas):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.float_time = 0
@@ -87,7 +87,7 @@ class Safira(Princess):
         super().apply_gravity()
 
 
-class Louise(Princess):
+class Louise(Princesas):
     def special_power(self, enemies):
         if self.stars >= 25:
             self.stars -= 25
@@ -95,7 +95,7 @@ class Louise(Princess):
                 e.take_damage(2)
 
 
-class Anika(Princess):
+class Anika(Princesas):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.shield = False
@@ -120,7 +120,7 @@ class Anika(Princess):
         super().take_damage(amount)
 
 
-class Meliah(Princess):
+class Meliah(Princesas):
     def special_power(self, enemies):
         if self.stars >= 35:
             self.stars -= 35
@@ -129,7 +129,7 @@ class Meliah(Princess):
 
 
 
-class Enemy(Entity):
+class Inimigo(Entity):
     def __init__(self, x, y):
         super().__init__(x, y, 40, 40)
         self.health = 3
@@ -140,11 +140,11 @@ class Enemy(Entity):
             self.kill()
 
 
-class Witch(Enemy):
+class Bruxa(Enemy):
     pass
 
 
-class Wasp(Enemy):
+class Vespa(Enemy):
     def update(self, player):
         direction = pygame.math.Vector2(player.rect.center) - self.rect.center
         if direction.length() > 0:
@@ -154,7 +154,7 @@ class Wasp(Enemy):
         self.rect.y += direction.y * 3
 
 
-class Plant(Enemy):
+class Planta(Enemy):
     pass
 
 
@@ -169,7 +169,7 @@ class Boss(Enemy):
 
 
 
-class Projectile(pygame.sprite.Sprite):
+class Progetil(pygame.sprite.Sprite):
     def __init__(self, x, y, direction):
         super().__init__()
 
