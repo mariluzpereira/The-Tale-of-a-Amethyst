@@ -140,7 +140,7 @@ class Inimigo(Entity):
             self.kill()
 
 
-class Bruxa(Enemy):
+class Bruxa(Inimigo):
     pass
 
 
@@ -154,11 +154,11 @@ class Vespa(Enemy):
         self.rect.y += direction.y * 3
 
 
-class Planta(Enemy):
+class Planta(Inimigo):
     pass
 
 
-class Boss(Enemy):
+class Boss(Inimigo):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.phase = 1
@@ -169,7 +169,7 @@ class Boss(Enemy):
 
 
 
-class Progetil(pygame.sprite.Sprite):
+class Projetil(pygame.sprite.Sprite):
     def __init__(self, x, y, direction):
         super().__init__()
 
