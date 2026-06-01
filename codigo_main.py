@@ -62,7 +62,7 @@ class Princesas(Entity):
         if direction.length() > 0:
             direction = direction.normalize()
 
-        return Projectile(self.rect.centerx, self.rect.centery, direction)
+        return Projetil(self.rect.centerx, self.rect.centery, direction)
 
     def special_power(self):
         pass
@@ -144,7 +144,7 @@ class Bruxa(Inimigo):
     pass
 
 
-class Vespa(Enemy):
+class Vespa(Inimigo):
     def update(self, player):
         direction = pygame.math.Vector2(player.rect.center) - self.rect.center
         if direction.length() > 0:
