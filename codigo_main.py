@@ -17,9 +17,9 @@ COLOR_TEXT = (255, 255, 255)
 
 # Cores das Princesas
 COLOR_SAFIRA = (50, 150, 255)   # Azul
-COLOR_LOUISE = (220, 220, 50)   # Amarelo/Vento
-COLOR_ANIKA = (50, 200, 100)    # Verde/Escudo
-COLOR_MELIAH = (180, 50, 200)   # Roxo/Tempo
+COLOR_LOUISE = (220, 220, 50)   # Amarelo
+COLOR_ANIKA = (50, 200, 100)    # Verde
+COLOR_MELIAH = (180, 50, 200)   # Roxo
 
 # Cores dos Inimigos
 COLOR_BRUXA = (140, 20, 180)
