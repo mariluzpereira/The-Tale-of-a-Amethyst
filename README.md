@@ -87,7 +87,7 @@ Botão Esquerdo do Mouse: Ataque básico (direcionado pelo cursor).
 
 Botão Direito do Mouse: Ativar Poder Especial da princesa escolhida.
 
-Tecla E: Interagir com NPCs e avançar diálogos.
+Tecla E: Interagir com NPCs, coletar itens e avançar diálogos.
 
 
 
