@@ -1,9 +1,9 @@
 import pygame
 import math
 from configuracoes import cor_bruxa, cor_planta, cor_vespa, cor_boss
-from projeteis import projectile
+from projeteis import projectil
 
-class enemy(pygame.sprite.Sprite):
+class inimigo(pygame.sprite.Sprite):
     def __init__(self, x, y, tipo_inimigo):
         super().__init__()
         self.enemy_type = tipo_inimigo
