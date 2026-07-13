@@ -3,6 +3,7 @@ from configuracoes import (
     gravidade, cor_safira, cor_louise, cor_anika, cor_meliah
 )
 
+#corrigir o valor da vida do jogador 
 class jogador(pygame.sprite.Sprite):
     def __init__(self, x, y, tipo_personagem):
         super().__init__()
@@ -24,7 +25,7 @@ class jogador(pygame.sprite.Sprite):
         self.jump_power = -13
         self.is_grounded = False
         
-        # informções do jogador
+        # informações do jogador
         self.max_hearts = 5
         self.hearts = 5
         self.stars = 100 
