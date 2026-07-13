@@ -2,7 +2,7 @@ import pygame
 import math
 from configuracoes import largura_tela, altura_tela
 
-class projectile(pygame.sprite.Sprite):
+class projectil(pygame.sprite.Sprite):
     def __init__(self, x, y, alvo_x, alvo_y, eh_inimigo=False):
         super().__init__()
         self.image = pygame.Surface((12, 12), pygame.SRCALPHA)
