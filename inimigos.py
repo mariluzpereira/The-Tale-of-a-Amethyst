@@ -6,7 +6,7 @@ from projeteis import projetil
 class inimigo(pygame.sprite.Sprite):
     def __init__(self, x, y, tipo_inimigo):
         super().__init__()
-        self.enemy_type = tipo_inimigo  # Mantido para conversar com o motor principal
+        self.enemy_type = tipo_inimigo  
         self.image = pygame.Surface((40, 40))
         
         if tipo_inimigo == "Bruxa": 
