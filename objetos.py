@@ -1,7 +1,7 @@
 import pygame
 from configuracoes import cor_chao, cor_plataforma
 
-class platform(pygame.sprite.Sprite):
+class platforma(pygame.sprite.Sprite):
     def __init__(self, x, y, w, h, eh_chao=False):
         super().__init__()
         self.image = pygame.Surface((w, h))
