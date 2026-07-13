@@ -17,21 +17,21 @@ class player(pygame.sprite.Sprite):
         self.image.fill(self.color)
         self.rect = self.image.get_rect(topleft=(x, y))
         
-        # física
+        # consertar fisica
         self.vx = 0
         self.vy = 0
         self.speed = 5
         self.jump_power = -13
         self.is_grounded = False
         
-        # status do jogador
+        # informções do jogador
         self.max_hearts = 5
         self.hearts = 5
         self.stars = 100 
         self.score = 0
         self.flowers_collected = 0
         
-        # habilidades e tempos de recarga
+        # habilidades/tempo de recarga
         self.special_active = False
         self.special_timer = 0
         self.cooldown_timer = 0    
