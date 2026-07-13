@@ -3,7 +3,7 @@ import sys
 import math
 from configuracoes import *
 from jogador import jogador
-from inimigos import enemy
+from inimigos import inimigo
 from projeteis import projectil
 from objetos import platforma, item
 
