@@ -104,10 +104,9 @@ class gameengine:
                 elif self.state == 'DIALOGUE':
                     if event.key == pygame.K_e: 
                         self.state = self.next_state_after_dialogue
-                        # CORREÇÃO: Força o Pygame a atualizar o estado interno do teclado
-                        # evitando que ele ignore o input logo após fechar a caixa de diálogo.
                         pygame.key.set_mods(0) 
 
+    #alterar dialogo eventualmente
     def start_game(self): 
         self.build_level()
         self.trigger_dialogue(
@@ -118,7 +117,7 @@ class gameengine:
 
     def update(self):
         if self.state == 'GAMEPLAY':
-            # Pygame precisa que a fila de eventos tenha rodado antes disso.
+            
             keys = pygame.key.get_pressed()
             time_scale = 0.3 if (self.player.char_type == "Meliah" and self.player.special_active) else 1.0
             
@@ -139,12 +138,13 @@ class gameengine:
                     proj.kill()
                     enemy.hp -= proj.damage 
                     
+                    #alterar mensagem 
                     if enemy.hp <= 0:
                         if enemy.enemy_type == "Boss":
                             if self.player.score > 200:
-                                self.trigger_dialogue("Voce salvou o rei e purificou o reino!", "Final Bom alcancado com gloria!", 'VICTORY')
+                                self.trigger_dialogue("Voce salvou o rei e purificou o reino!", "Final Bom alcancado com gloria!", 'VITÓRIA')
                             else:
-                                self.trigger_dialogue("O rei foi derrotado, mas cicatrizes profundas ficaram.", "Final Neutro obtido.", 'VICTORY')
+                                self.trigger_dialogue("O rei foi derrotado, mas cicatrizes profundas ficaram.", "Final Neutro obtido.", 'VITÓRIA')
                         enemy.kill()
                         self.player.score += 50
 
