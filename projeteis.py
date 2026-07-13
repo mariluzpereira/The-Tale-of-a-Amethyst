@@ -2,11 +2,11 @@ import pygame
 import math
 from configuracoes import largura_tela, altura_tela
 
-class projectil(pygame.sprite.Sprite):
+class projetil(pygame.sprite.Sprite):
     def __init__(self, x, y, alvo_x, alvo_y, eh_inimigo=False):
         super().__init__()
         self.image = pygame.Surface((12, 12), pygame.SRCALPHA)
-        self.is_enemy = eh_inimigo
+        self.eh_inimigo = eh_inimigo
         
         if eh_inimigo:
             pygame.draw.circle(self.image, (255, 50, 50), (6, 6), 6)
@@ -24,7 +24,7 @@ class projectil(pygame.sprite.Sprite):
         self.vy = math.sin(angulo) * velocidade
 
     def update(self, escala_tempo, plataformas):
-        escala = escala_tempo if self.is_enemy else 1.0
+        escala = escala_tempo if self.eh_inimigo else 1.0
         self.rect.x += self.vx * escala
         self.rect.y += self.vy * escala
         if self.rect.right < 0 or self.rect.left > largura_tela or self.rect.bottom < 0 or self.rect.top > altura_tela:
