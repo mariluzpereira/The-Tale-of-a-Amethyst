@@ -3,6 +3,7 @@ import math
 from configuracoes import cor_bruxa, cor_planta, cor_vespa, cor_boss
 from projeteis import projectil
 
+#corrigir o nível de dano dos inimigos 
 class inimigo(pygame.sprite.Sprite):
     def __init__(self, x, y, tipo_inimigo):
         super().__init__()
