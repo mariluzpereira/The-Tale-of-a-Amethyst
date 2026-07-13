@@ -1,5 +1,5 @@
-from main_jogo import gameengine
+from main_jogo import motorjogo
 
 if __name__ == "__main__":
-    jogo = gameengine()
-    jogo.run()
+    jogo = motorjogo()
+    jogo.executar()
