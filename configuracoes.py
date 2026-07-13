@@ -4,6 +4,7 @@ largura_tela = 1024
 altura_tela = 576
 fps = 60
 
+
 gravidade = 0.6
 
 # cores (substitutos das sprites)
