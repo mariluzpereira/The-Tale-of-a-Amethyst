@@ -2,10 +2,10 @@ import pygame
 import sys
 import math
 from configuracoes import *
-from jogador import player
+from jogador import jogador
 from inimigos import enemy
-from projeteis import projectile
-from objetos import platform, item
+from projeteis import projectil
+from objetos import platforma, item
 
 class gameengine:
     def __init__(self):
