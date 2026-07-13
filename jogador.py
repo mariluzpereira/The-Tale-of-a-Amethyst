@@ -3,7 +3,7 @@ from configuracoes import (
     gravidade, cor_safira, cor_louise, cor_anika, cor_meliah
 )
 
-class player(pygame.sprite.Sprite):
+class jogador(pygame.sprite.Sprite):
     def __init__(self, x, y, tipo_personagem):
         super().__init__()
         self.char_type = tipo_personagem
@@ -104,7 +104,7 @@ class player(pygame.sprite.Sprite):
             elif self.char_type == "Anika": self.special_timer = 150 
             elif self.char_type == "Meliah": self.special_timer = 180 
 
-    def take_damage(self):
+    def receber_dano(self):
         if self.invulnerable_timer <= 0:
             self.hearts -= 1
             self.invulnerable_timer = 60
