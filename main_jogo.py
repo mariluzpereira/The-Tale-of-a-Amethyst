@@ -186,8 +186,8 @@ class motorjogo:
         elif self.estado == 'CHAR_SELECT':
             self.desenhar_texto_centralizado("Escolha sua Princesa", self.fonte_titulo, 100, cor_texto)
             self.desenhar_texto_centralizado("[1] Safira (Poder: Flutuar)", self.fonte, 220, cor_safira)
-            self.desenhar_texto_centralizado("[2] Louise (Poder: Furacao de Area)", self.fonte, 270, cor_louise)
-            self.desenhar_texto_centralizado("[3] Anika (Poder: Escudo Frontal)", self.fonte, 320, cor_anika)
+            self.desenhar_texto_centralizado("[2] Louise (Poder: Furacao de Areia)", self.fonte, 270, cor_louise)
+            self.desenhar_texto_centralizado("[3] Anika (Poder: Escudo)", self.fonte, 320, cor_anika)
             self.desenhar_texto_centralizado("[4] Meliah (Poder: Congelar o Tempo)", self.fonte, 370, cor_meliah)
 
         elif self.estado == 'CREDITS':
