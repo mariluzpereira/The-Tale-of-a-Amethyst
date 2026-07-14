@@ -25,6 +25,17 @@ class motorjogo:
         self.substituto_voz_dialogo = ""
         self.proximo_estado_pos_dialogo = 'GAMEPLAY'
         
+        
+        self.btn_jogar = pygame.Rect(largura_tela // 2 - 100, altura_tela // 2 - 50, 200, 40)
+        self.btn_creditos = pygame.Rect(largura_tela // 2 - 100, altura_tela // 2, 200, 40)
+        self.btn_sair = pygame.Rect(largura_tela // 2 - 100, altura_tela // 2 + 50, 200, 40)
+        
+      
+        self.btn_safira = pygame.Rect(largura_tela // 2 - 200, 210, 400, 40)
+        self.btn_louise = pygame.Rect(largura_tela // 2 - 200, 260, 400, 40)
+        self.btn_anika = pygame.Rect(largura_tela // 2 - 200, 310, 400, 40)
+        self.btn_meliah = pygame.Rect(largura_tela // 2 - 200, 360, 400, 40)
+
         self.inicializar_grupos()
 
     def inicializar_grupos(self):
@@ -79,26 +90,45 @@ class motorjogo:
                 sys.exit()
                 
             if evento.type == pygame.MOUSEBUTTONDOWN:
-                if self.estado == 'GAMEPLAY':
-                    mx, my = pygame.mouse.get_pos()
-                    if evento.button == 1: 
+                mx, my = pygame.mouse.get_pos()
+                
+              
+                if evento.button == 1:
+                   
+                    if self.estado == 'MENU':
+                        if self.btn_jogar.collidepoint(mx, my):
+                            self.estado = 'CHAR_SELECT'
+                        elif self.btn_creditos.collidepoint(mx, my):
+                            self.estado = 'CREDITS'
+                        elif self.btn_sair.collidepoint(mx, my):
+                            pygame.quit()
+                            sys.exit()
+                            
+                    
+                    elif self.estado == 'CHAR_SELECT':
+                        if self.btn_safira.collidepoint(mx, my):
+                            self.princesa_selecionada = "Safira"
+                            self.iniciar_jogo()
+                        elif self.btn_louise.collidepoint(mx, my):
+                            self.princesa_selecionada = "Louise"
+                            self.iniciar_jogo()
+                        elif self.btn_anika.collidepoint(mx, my):
+                            self.princesa_selecionada = "Anika"
+                            self.iniciar_jogo()
+                        elif self.btn_meliah.collidepoint(mx, my):
+                            self.princesa_selecionada = "Meliah"
+                            self.iniciar_jogo()
+                            
+                    
+                    elif self.estado == 'GAMEPLAY':
                         self.projeteis_jogador.add(projetil(self.jogador.rect.centerx, self.jogador.rect.centery, mx, my, eh_inimigo=False))
-                    elif evento.button == 3: 
-                        self.jogador.use_special()
+                
+                
+                elif evento.button == 3 and self.estado == 'GAMEPLAY': 
+                    self.jogador.use_special()
                         
             if evento.type == pygame.KEYDOWN:
-                if self.estado == 'MENU':
-                    if evento.key == pygame.K_1: self.estado = 'CHAR_SELECT'
-                    elif evento.key == pygame.K_2: self.estado = 'CREDITS'
-                    elif evento.key == pygame.K_3: 
-                        pygame.quit()
-                        sys.exit()
-                elif self.estado == 'CHAR_SELECT':
-                    if evento.key == pygame.K_1: self.princesa_selecionada = "Safira"; self.iniciar_jogo()
-                    elif evento.key == pygame.K_2: self.princesa_selecionada = "Louise"; self.iniciar_jogo()
-                    elif evento.key == pygame.K_3: self.princesa_selecionada = "Anika"; self.iniciar_jogo()
-                    elif evento.key == pygame.K_4: self.princesa_selecionada = "Meliah"; self.iniciar_jogo()
-                elif self.estado in ['CREDITS', 'GAMEOVER', 'VICTORY']:
+                if self.estado in ['CREDITS', 'GAMEOVER', 'VICTORY']:
                     if evento.key in [pygame.K_ESCAPE, pygame.K_RETURN]:
                         self.estado = 'MENU'
                 elif self.estado == 'DIALOGUE':
@@ -179,16 +209,20 @@ class motorjogo:
         
         if self.estado == 'MENU':
             self.desenhar_texto_centralizado("The Tale of an Amethyst", self.fonte_titulo, altura_tela // 4, (180, 100, 255))
-            self.desenhar_texto_centralizado("[1] Jogar", self.fonte, altura_tela // 2 - 40)
-            self.desenhar_texto_centralizado("[2] Creditos", self.fonte, altura_tela // 2 + 10)
-            self.desenhar_texto_centralizado("[3] Sair", self.fonte, altura_tela // 2 + 60)
+            
+            
+            self.desenhar_botao_texto("Jogar", self.fonte, self.btn_jogar, (100, 100, 100), cor_texto)
+            self.desenhar_botao_texto("Creditos", self.fonte, self.btn_creditos, (100, 100, 100), cor_texto)
+            self.desenhar_botao_texto("Sair", self.fonte, self.btn_sair, (100, 100, 100), cor_texto)
             
         elif self.estado == 'CHAR_SELECT':
             self.desenhar_texto_centralizado("Escolha sua Princesa", self.fonte_titulo, 100, cor_texto)
-            self.desenhar_texto_centralizado("[1] Safira (Poder: Flutuar)", self.fonte, 220, cor_safira)
-            self.desenhar_texto_centralizado("[2] Louise (Poder: Furacao de Areia)", self.fonte, 270, cor_louise)
-            self.desenhar_texto_centralizado("[3] Anika (Poder: Escudo)", self.fonte, 320, cor_anika)
-            self.desenhar_texto_centralizado("[4] Meliah (Poder: Congelar o Tempo)", self.fonte, 370, cor_meliah)
+            
+           
+            self.desenhar_botao_texto("Safira (Poder: Flutuar)", self.fonte, self.btn_safira, (40, 40, 40), cor_safira)
+            self.desenhar_botao_texto("Louise (Poder: Furacao de Areia)", self.fonte, self.btn_louise, (40, 40, 40), cor_louise)
+            self.desenhar_botao_texto("Anika (Poder: Escudo)", self.fonte, self.btn_anika, (40, 40, 40), cor_anika)
+            self.desenhar_botao_texto("Meliah (Poder: Congelar o Tempo)", self.fonte, self.btn_meliah, (40, 40, 40), cor_meliah)
 
         elif self.estado == 'CREDITS':
             self.desenhar_texto_centralizado("CREDITOS", self.fonte_titulo, 150, (100, 200, 255))
@@ -269,6 +303,21 @@ class motorjogo:
         self.tela.blit(self.fonte.render(self.texto_dialogo, True, cor_texto), (40, altura_tela - altura_caixa - 5))
         self.tela.blit(self.fonte.render(self.substituto_voz_dialogo, True, (150, 255, 150)), (40, altura_tela - altura_caixa + 30))
         self.tela.blit(self.fonte.render("[Pressione 'E' para Continuar]", True, (180, 180, 180)), (700, altura_tela - 50))
+
+    def desenhar_texto_centralizado(self, texto, fonte, pos_y, cor=cor_texto):
+        superficie_texto = fonte.render(texto, True, cor)
+        retangulo_texto = superficie_texto.get_rect(center=(largura_tela // 2, pos_y))
+        self.tela.blit(superficie_texto, retangulo_texto)
+
+    def desenhar_botao_texto(self, texto, fonte, retangulo, cor_fundo_btn, cor_texto_btn):
+       
+        pygame.draw.rect(self.tela, cor_fundo_btn, retangulo, border_radius=5)
+        pygame.draw.rect(self.tela, (200, 200, 200), retangulo, 1, border_radius=5) 
+        
+        
+        superficie_texto = fonte.render(texto, True, cor_texto_btn)
+        retangulo_texto = superficie_texto.get_rect(center=retangulo.center)
+        self.tela.blit(superficie_texto, retangulo_texto)
 
     def desenhar_texto_centralizado(self, texto, fonte, pos_y, cor=cor_texto):
         superficie_texto = fonte.render(texto, True, cor)
