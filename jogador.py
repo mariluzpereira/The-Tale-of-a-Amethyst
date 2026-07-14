@@ -1,6 +1,6 @@
 import pygame
 from configuracoes import (
-    gravidade, cor_safira, cor_louise, cor_anika, cor_meliah
+    gravidade, cor_safira, cor_louise, cor_anika, cor_meliah, largura_tela
 )
 
 class jogador(pygame.sprite.Sprite):
@@ -17,21 +17,18 @@ class jogador(pygame.sprite.Sprite):
         self.image.fill(self.color)
         self.rect = self.image.get_rect(topleft=(x, y))
         
-        # Física
         self.vx = 0
         self.vy = 0
         self.velocidade = 5
         self.forca_pulo = -13
         self.esta_no_chao = False
         
-        # Informações do jogador
         self.coracoes_maximos = 5
         self.hearts = 5  
         self.stars = 100  
         self.score = 0  
         self.flowers_collected = 0  
         
-        # Habilidades / Tempo de recarga
         self.special_active = False  
         self.tempo_especial = 0
         self.cooldown_timer = 0  
@@ -65,7 +62,6 @@ class jogador(pygame.sprite.Sprite):
 
         if self.vy > 15: self.vy = 15
 
-        # Pulo
         if (teclas[pygame.K_w] or teclas[pygame.K_SPACE]) and self.esta_no_chao:
             self.vy = self.forca_pulo
             self.esta_no_chao = False
@@ -76,9 +72,14 @@ class jogador(pygame.sprite.Sprite):
                 self.special_active = False
                 self.cooldown_timer = self.tempo_recarga_maximo 
 
-        # Movimento e colisão
         self.rect.x += self.vx
         self.tratar_colisao(plataformas, 'x')
+        
+        if self.rect.left < 0:
+            self.rect.left = 0
+        elif self.rect.right > largura_tela:
+            self.rect.right = largura_tela
+
         self.rect.y += self.vy
         self.esta_no_chao = False
         self.tratar_colisao(plataformas, 'y')
