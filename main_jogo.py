@@ -72,7 +72,7 @@ class motorjogo:
     def disparar_dialogo(self, texto, texto_audio, proximo_estado):
         self.estado = 'DIALOGUE'
         self.texto_dialogo = texto
-        self.substituto_voz_dialogo = f"[Dublagem Executando]: \"{texto_audio}\""
+        self.substituto_voz_dialogo = f"[Lembrar da dublagem]: \"{texto_audio}\""
         self.proximo_estado_pos_dialogo = proximo_estado
 
     def executar(self):
