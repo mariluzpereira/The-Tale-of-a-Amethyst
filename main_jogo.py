@@ -109,8 +109,8 @@ class motorjogo:
     def iniciar_jogo(self): 
         self.construir_fase()
         self.disparar_dialogo(
-            "Princesa, o Reino esta corrompido! Derrote o Rei das Fadas.",
-            "Aviso real: O destino de Amethyst depende de suas acoes imediatas agora!",
+            "Princesa, o reino esta corrompido! Derrote o Rei das Fadas.",
+            "Botão direito ativa habilidade, botão esquerdo atira",
             'GAMEPLAY'
         )
 
@@ -192,7 +192,7 @@ class motorjogo:
 
         elif self.estado == 'CREDITS':
             self.desenhar_texto_centralizado("CREDITOS", self.fonte_titulo, 150, (100, 200, 255))
-            self.desenhar_texto_centralizado("Desenvolvido focado em acessibilidade e acao.", self.fonte, 250)
+            self.desenhar_texto_centralizado("Desenvolvido por Aimée e Mariluz.", self.fonte, 250)
             self.desenhar_texto_centralizado("Pressione ENTER ou ESC para retornar", self.fonte, 400, (150, 150, 150))
 
         elif self.estado in ['GAMEPLAY', 'DIALOGUE']:
@@ -219,7 +219,7 @@ class motorjogo:
                 deslocamento_y_danca = math.sin(pygame.time.get_ticks() * 0.01) * 15
                 pygame.draw.rect(self.tela, (255, 105, 180), (300, 200 + deslocamento_y_danca, 30, 30))
                 pygame.draw.rect(self.tela, (0, 255, 127), (650, 200 - deslocamento_y_danca, 30, 30))
-                self.desenhar_texto_centralizado("!! FESTA DOS GNOMOS ATIVADA !!", self.fonte, 150, (255, 255, 100))
+                self.desenhar_texto_centralizado("Easter egg", self.fonte, 150, (255, 255, 100))
 
             if self.estado == 'DIALOGUE':
                 self.desenhar_ui_dialogo()
@@ -229,7 +229,7 @@ class motorjogo:
             self.desenhar_texto_centralizado("Pressione ENTER para voltar ao Menu", self.fonte, altura_tela // 2)
 
         elif self.estado == 'VICTORY':
-            self.desenhar_texto_centralizado("REINO SALVO!", self.fonte_titulo, altura_tela // 3, (50, 255, 50))
+            self.desenhar_texto_centralizado("Reino Salvo!", self.fonte_titulo, altura_tela // 3, (50, 255, 50))
             self.desenhar_texto_centralizado("Obrigado por jogar The Tale of an Amethyst!", self.fonte, altura_tela // 2)
             self.desenhar_texto_centralizado("Pressione ENTER para fechar a jornada.", self.fonte, altura_tela // 2 + 60)
 
