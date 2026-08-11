@@ -3,7 +3,7 @@ import math
 from configuracoes import cor_bruxa, cor_planta, cor_vespa, cor_boss
 from projeteis import projetil
 
-class inimigo(pygame.sprite.Sprite):
+class inimigo(pygame.sprite.Sprite): #classe abstrata
     def __init__(self, x, y, tipo_inimigo):
         super().__init__()
         self.enemy_type = tipo_inimigo  
