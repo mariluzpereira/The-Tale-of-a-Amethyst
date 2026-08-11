@@ -3,7 +3,7 @@ from configuracoes import (
     gravidade, cor_safira, cor_louise, cor_anika, cor_meliah, largura_tela
 )
 
-class jogador(pygame.sprite.Sprite):
+class jogador(pygame.sprite.Sprite): #classe abstrata
     def __init__(self, x, y, tipo_personagem):
         super().__init__()
         self.tipo_personagem = tipo_personagem
