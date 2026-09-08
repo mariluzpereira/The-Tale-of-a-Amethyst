@@ -3,13 +3,17 @@ import math
 from configuracoes import largura_tela, altura_tela
 
 class projetil(pygame.sprite.Sprite):
-    def __init__(self, x, y, alvo_x, alvo_y, eh_inimigo=False):
+    def __init__(self, x, y, alvo_x, alvo_y, eh_inimigo=False, tipo="normal"):
         super().__init__()
         self.image = pygame.Surface((12, 12), pygame.SRCALPHA)
         self.eh_inimigo = eh_inimigo
+        self.tipo = tipo
         
         if eh_inimigo:
-            pygame.draw.circle(self.image, (255, 50, 50), (6, 6), 6)
+            if self.tipo == "pocao_bruxa":
+                pygame.draw.circle(self.image, (50, 220, 50), (6, 6), 6)
+            else:
+                pygame.draw.circle(self.image, (255, 50, 50), (6, 6), 6)
             self.damage = 1
             velocidade = 5
         else:
