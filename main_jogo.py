@@ -1,325 +1,166 @@
 import pygame
-import sys
-import math
-from configuracoes import *
-from jogador import jogador
-from inimigos import inimigo
-from projeteis import projetil
-from objetos import plataforma, item
+from configuracoes import (
+    gravidade, cor_safira, cor_louise, cor_anika, cor_meliah, largura_tela
+)
 
-class motorjogo:
-    def __init__(self):
-        pygame.init()
-        self.tela = pygame.display.set_mode((largura_tela, altura_tela))
-        pygame.display.set_caption("The Tale of an Amethyst")
-        self.relogio = pygame.time.Clock()
-        self.fonte = pygame.font.SysFont("Arial", 22)
-        self.fonte_titulo = pygame.font.SysFont("Arial", 50, bold=True)
+class jogador(pygame.sprite.Sprite):
+    def __init__(self, x, y, tipo_personagem):
+        super().__init__()
+        self.tipo_personagem = tipo_personagem
         
-        self.estado = 'MENU'
-        self.princesa_selecionada = "Safira"
-        self.easter_egg_ativo = False
-        self.temporizador_easter_egg = 0
-        
-        self.texto_dialogo = ""
-        self.substituto_voz_dialogo = ""
-        self.proximo_estado_pos_dialogo = 'GAMEPLAY'
-        
-        
-        self.btn_jogar = pygame.Rect(largura_tela // 2 - 100, altura_tela // 2 - 50, 200, 40)
-        self.btn_creditos = pygame.Rect(largura_tela // 2 - 100, altura_tela // 2, 200, 40)
-        self.btn_sair = pygame.Rect(largura_tela // 2 - 100, altura_tela // 2 + 50, 200, 40)
-        
-      
-        self.btn_safira = pygame.Rect(largura_tela // 2 - 200, 210, 400, 40)
-        self.btn_louise = pygame.Rect(largura_tela // 2 - 200, 260, 400, 40)
-        self.btn_anika = pygame.Rect(largura_tela // 2 - 200, 310, 400, 40)
-        self.btn_meliah = pygame.Rect(largura_tela // 2 - 200, 360, 400, 40)
 
-        self.inicializar_grupos()
+        if tipo_personagem == "Safira": self.color = cor_safira
+        elif tipo_personagem == "Louise": self.color = cor_louise
+        elif tipo_personagem == "Anika": self.color = cor_anika
+        else: self.color = cor_meliah
 
-    def inicializar_grupos(self):
-        self.plataformas = pygame.sprite.Group()
-        self.inimigos = pygame.sprite.Group()
-        self.projeteis_jogador = pygame.sprite.Group()
-        self.projeteis_inimigo = pygame.sprite.Group()
-        self.itens = pygame.sprite.Group()
-
-    def construir_fase(self):
-        self.inicializar_grupos()
-        self.plataformas.add(plataforma(0, altura_tela - 40, largura_tela, 40, eh_chao=True))
+        self.cor_sapinho = self.color
         
-        self.plataformas.add(plataforma(150, 420, 200, 20))
-        self.plataformas.add(plataforma(450, 320, 250, 20))
-        self.plataformas.add(plataforma(200, 200, 150, 20))
-        self.plataformas.add(plataforma(750, 220, 200, 20))
+        self.eh_sapinho = False
+        self.tempo_sapinho = 0 
+
+
+        self.image = pygame.Surface((40, 60))
+        self.image.fill(self.color)
+        self.rect = self.image.get_rect(topleft=(x, y))
         
-        self.jogador = jogador(50, altura_tela - 120, self.princesa_selecionada)
+        self.vx = 0
+        self.vy = 0
+        self.velocidade = 5
+        self.forca_pulo = -13
+        self.esta_no_chao = False
         
-        for x in [200, 500, 800]: self.itens.add(item(x, altura_tela - 70, "Maca"))
-        for x in [250, 550, 300]: self.itens.add(item(x, 150, "Estrela"))
+        self.coracoes_maximos = 5
+        self.hearts = 5  
+        self.stars = 100  
+        self.score = 0  
+        self.flowers_collected = 0  
         
-        for i in range(22):
-            self.itens.add(item(180 + (i * 25), 380 if i % 2 == 0 else 280, "Flor"))
+        self.special_active = False  
+        self.tempo_especial = 0
+        self.cooldown_timer = 0  
+        self.tempo_recarga_maximo = 300    
+        self.tempo_invulnerabilidade = 0
 
-        self.inimigos.add(inimigo(250, 370, "Planta"))
-        self.inimigos.add(inimigo(550, 270, "Bruxa"))
-        self.inimigos.add(inimigo(800, 150, "Vespa"))
-        
-        self.boss = inimigo(850, 120, "Boss")
-        self.inimigos.add(self.boss)
-
-    def disparar_dialogo(self, texto, texto_audio, proximo_estado):
-        self.estado = 'DIALOGUE'
-        self.texto_dialogo = texto
-        self.substituto_voz_dialogo = f"[Lembrar da dublagem]: \"{texto_audio}\""
-        self.proximo_estado_pos_dialogo = proximo_estado
-
-    def executar(self):
-        while True:
-            self.tratar_eventos()
-            self.atualizar()
-            self.desenhar()
-            self.relogio.tick(fps)
-
-    def tratar_eventos(self):
-        eventos = pygame.event.get()
-        for evento in eventos:
-            if evento.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-                
-            if evento.type == pygame.MOUSEBUTTONDOWN:
-                mx, my = pygame.mouse.get_pos()
-                
-              
-                if evento.button == 1:
-                   
-                    if self.estado == 'MENU':
-                        if self.btn_jogar.collidepoint(mx, my):
-                            self.estado = 'CHAR_SELECT'
-                        elif self.btn_creditos.collidepoint(mx, my):
-                            self.estado = 'CREDITS'
-                        elif self.btn_sair.collidepoint(mx, my):
-                            pygame.quit()
-                            sys.exit()
-                            
-                    
-                    elif self.estado == 'CHAR_SELECT':
-                        if self.btn_safira.collidepoint(mx, my):
-                            self.princesa_selecionada = "Safira"
-                            self.iniciar_jogo()
-                        elif self.btn_louise.collidepoint(mx, my):
-                            self.princesa_selecionada = "Louise"
-                            self.iniciar_jogo()
-                        elif self.btn_anika.collidepoint(mx, my):
-                            self.princesa_selecionada = "Anika"
-                            self.iniciar_jogo()
-                        elif self.btn_meliah.collidepoint(mx, my):
-                            self.princesa_selecionada = "Meliah"
-                            self.iniciar_jogo()
-                            
-                    
-                    elif self.estado == 'GAMEPLAY':
-                        self.projeteis_jogador.add(projetil(self.jogador.rect.centerx, self.jogador.rect.centery, mx, my, eh_inimigo=False))
-                
-                
-                elif evento.button == 3 and self.estado == 'GAMEPLAY': 
-                    self.jogador.use_special()
-                        
-            if evento.type == pygame.KEYDOWN:
-                if self.estado in ['CREDITS', 'GAMEOVER', 'VICTORY']:
-                    if evento.key in [pygame.K_ESCAPE, pygame.K_RETURN]:
-                        self.estado = 'MENU'
-                elif self.estado == 'DIALOGUE':
-                    if evento.key == pygame.K_e: 
-                        self.estado = self.proximo_estado_pos_dialogo
-                        pygame.key.set_mods(0) 
-
-    def iniciar_jogo(self): 
-        self.construir_fase()
-        self.disparar_dialogo(
-            "Princesa, o reino esta corrompido! Derrote o Rei das Fadas.",
-            "Botão direito ativa habilidade, botão esquerdo atira",
-            'GAMEPLAY'
-        )
-
-    def atualizar(self):
-        if self.estado == 'GAMEPLAY':
-            teclas = pygame.key.get_pressed()
-            escala_tempo = 0.3 if (self.jogador.tipo_personagem == "Meliah" and self.jogador.special_active) else 1.0
+    def transformar_em_sapinho(self):
+        if not self.eh_sapinho:
+            self.eh_sapinho = True
+            self.tempo_sapinho = 600 
+            self.special_active = False 
             
-            self.jogador.update(teclas, self.plataformas)
-            self.inimigos.update(self.jogador, escala_tempo, self.projeteis_inimigo)
-            self.projeteis_jogador.update(1.0, self.plataformas)
-            self.projeteis_inimigo.update(escala_tempo, self.plataformas)
-            
-            if self.jogador.tipo_personagem == "Louise" and self.jogador.special_active:
-                self.jogador.atacar_inimigos(self.inimigos) 
-                
-                for proj in self.projeteis_inimigo:
-                    if self.jogador.rect.inflate(60, 60).colliderect(proj.rect):
-                        proj.kill()
-                        self.jogador.score += 5
-            
-            for proj in self.projeteis_jogador:
-                inimigos_atingidos = pygame.sprite.spritecollide(proj, self.inimigos, False)
-                for inimigo_alvo in inimigos_atingidos:
-                    proj.kill()
-                    inimigo_alvo.hp -= proj.damage 
-                    
-                    if inimigo_alvo.hp <= 0:
-                        if inimigo_alvo.enemy_type == "Boss":
-                            if self.jogador.score > 200:
-                                self.disparar_dialogo("Voce salvou o rei e purificou o reino!", "Final Bom alcancado com gloria!", 'VICTORY')
-                            else:
-                                self.disparar_dialogo("O rei foi derrotado, mas cicatrizes profundas ficaram.", "Final Neutro obtido.", 'VICTORY')
-                        inimigo_alvo.kill()
-                        self.jogador.score += 50
+            pos_bottomleft = self.rect.bottomleft
+            self.image = pygame.Surface((25, 20))
+            self.image.fill(self.cor_sapinho)
+            self.rect = self.image.get_rect(bottomleft=pos_bottomleft)
 
-            protegido = (self.jogador.tipo_personagem == "Anika" and self.jogador.special_active)
-            if not protegido:
-                if pygame.sprite.spritecollideany(self.jogador, self.inimigos) or pygame.sprite.spritecollideany(self.jogador, self.projeteis_inimigo):
-                    self.jogador.receber_dano() 
-                    pygame.sprite.spritecollide(self.jogador, self.projeteis_inimigo, True)
+    def restaurar_forma_humana(self):
+        self.eh_sapinho = False
+        pos_bottomleft = self.rect.bottomleft
+        self.image = pygame.Surface((40, 60))
+        self.image.fill(self.color)
+        self.rect = self.image.get_rect(bottomleft=pos_bottomleft)
 
-            itens_coletados = pygame.sprite.spritecollide(self.jogador, self.itens, True)
-            for objeto_item in itens_coletados:
-                if objeto_item.item_type == "Maca":
-                    if self.jogador.hearts < self.jogador.coracoes_maximos: self.jogador.hearts += 1
-                elif objeto_item.item_type == "Estrela":
-                    self.jogador.stars = min(100, self.jogador.stars + 25)
-                elif objeto_item.item_type == "Flor":
-                    self.jogador.flowers_collected += 1
-                    self.jogador.score += 10
-                    if self.jogador.flowers_collected == 20:
-                        self.easter_egg_ativo = True
-                        self.temporizador_easter_egg = 180 
+    def update(self, teclas, plataformas):
+        if self.eh_sapinho:
+            self.tempo_sapinho -= 1
+            if self.tempo_sapinho <= 0:
+                self.restaurar_forma_humana()
 
-            if self.jogador.hearts <= 0:
-                self.estado = 'GAMEOVER'
-                
-            if self.easter_egg_ativo:
-                self.temporizador_easter_egg -= 1
-                if self.temporizador_easter_egg <= 0:
-                    self.easter_egg_ativo = False
-
-    def desenhar(self):
-        self.tela.fill(cor_fundo)
-        
-        if self.estado == 'MENU':
-            self.desenhar_texto_centralizado("The Tale of an Amethyst", self.fonte_titulo, altura_tela // 4, (180, 100, 255))
-            
-            
-            self.desenhar_botao_texto("Jogar", self.fonte, self.btn_jogar, (100, 100, 100), cor_texto)
-            self.desenhar_botao_texto("Creditos", self.fonte, self.btn_creditos, (100, 100, 100), cor_texto)
-            self.desenhar_botao_texto("Sair", self.fonte, self.btn_sair, (100, 100, 100), cor_texto)
-            
-        elif self.estado == 'CHAR_SELECT':
-            self.desenhar_texto_centralizado("Escolha sua Princesa", self.fonte_titulo, 100, cor_texto)
-            
-           
-            self.desenhar_botao_texto("Safira (Poder: Flutuar)", self.fonte, self.btn_safira, (40, 40, 40), cor_safira)
-            self.desenhar_botao_texto("Louise (Poder: Furacao de Areia)", self.fonte, self.btn_louise, (40, 40, 40), cor_louise)
-            self.desenhar_botao_texto("Anika (Poder: Escudo)", self.fonte, self.btn_anika, (40, 40, 40), cor_anika)
-            self.desenhar_botao_texto("Meliah (Poder: Congelar o Tempo)", self.fonte, self.btn_meliah, (40, 40, 40), cor_meliah)
-
-        elif self.estado == 'CREDITS':
-            self.desenhar_texto_centralizado("CREDITOS", self.fonte_titulo, 150, (100, 200, 255))
-            self.desenhar_texto_centralizado("Desenvolvido por Aimée e Mariluz.", self.fonte, 250)
-            self.desenhar_texto_centralizado("Pressione ENTER ou ESC para retornar", self.fonte, 400, (150, 150, 150))
-
-        elif self.estado in ['GAMEPLAY', 'DIALOGUE']:
-            self.plataformas.draw(self.tela)
-            self.itens.draw(self.tela)
-            self.inimigos.draw(self.tela)
-            self.projeteis_jogador.draw(self.tela)
-            self.projeteis_inimigo.draw(self.tela)
-            
-            pygame.draw.rect(self.tela, self.jogador.color, self.jogador.rect)
-            
-            if self.jogador.tipo_personagem == "Anika" and self.jogador.special_active:
-                escudo_surface = pygame.Surface((30, self.jogador.rect.height + 20), pygame.SRCALPHA)
-                pygame.draw.ellipse(escudo_surface, (0, 255, 255, 80), (0, 0, 25, self.jogador.rect.height + 20))
-                pygame.draw.ellipse(escudo_surface, (200, 255, 255, 255), (0, 0, 25, self.jogador.rect.height + 20), 3)
-                self.tela.blit(escudo_surface, (self.jogador.rect.right - 5, self.jogador.rect.top - 10))
-                
-            elif self.jogador.tipo_personagem == "Louise" and self.jogador.special_active:
-                pygame.draw.circle(self.tela, (255, 255, 255), self.jogador.rect.center, 50, 2)
-            
-            self.desenhar_hud()
-            
-            if self.easter_egg_ativo:
-                deslocamento_y_danca = math.sin(pygame.time.get_ticks() * 0.01) * 15
-                pygame.draw.rect(self.tela, (255, 105, 180), (300, 200 + deslocamento_y_danca, 30, 30))
-                pygame.draw.rect(self.tela, (0, 255, 127), (650, 200 - deslocamento_y_danca, 30, 30))
-                self.desenhar_texto_centralizado("Easter egg", self.fonte, 150, (255, 255, 100))
-
-            if self.estado == 'DIALOGUE':
-                self.desenhar_ui_dialogo()
-
-        elif self.estado == 'GAMEOVER':
-            self.desenhar_texto_centralizado("GAME OVER", self.fonte_titulo, altura_tela // 3, (255, 50, 50))
-            self.desenhar_texto_centralizado("Pressione ENTER para voltar ao Menu", self.fonte, altura_tela // 2)
-
-        elif self.estado == 'VICTORY':
-            self.desenhar_texto_centralizado("Reino Salvo!", self.fonte_titulo, altura_tela // 3, (50, 255, 50))
-            self.desenhar_texto_centralizado("Obrigado por jogar The Tale of an Amethyst!", self.fonte, altura_tela // 2)
-            self.desenhar_texto_centralizado("Pressione ENTER para fechar a jornada.", self.fonte, altura_tela // 2 + 60)
-
-        pygame.display.flip()
-
-    def desenhar_hud(self):
-        superficie_ui = pygame.Surface((largura_tela, 50), pygame.SRCALPHA)
-        superficie_ui.fill(cor_remans_ui)
-        self.tela.blit(superficie_ui, (0, 0))
-        
-        texto_coracoes = "S2 " * self.jogador.hearts
-        self.tela.blit(self.fonte.render(f"Vida: {texto_coracoes}", True, (255, 50, 100)), (20, 12))
-        
-        if self.jogador.special_active:
-            status_especial = "ATIVO"
-            cor_status = (0, 255, 255)
-        elif self.jogador.cooldown_timer > 0:
-            segundos_restantes = math.ceil(self.jogador.cooldown_timer / 60)
-            status_especial = f"AGUARDE ({segundos_restantes}s)"
-            cor_status = (230, 100, 50)
+        if self.tempo_invulnerabilidade > 0:
+            self.tempo_invulnerabilidade -= 1
+            if self.tempo_invulnerabilidade % 4 == 0: self.image.set_alpha(100)
+            else: self.image.set_alpha(255)
         else:
-            status_especial = "PRONTO (Botao Direito)"
-            cor_status = (100, 255, 100)
+            self.image.set_alpha(255)
+
+        if self.cooldown_timer > 0:
+            self.cooldown_timer -= 1
+
+        self.vx = 0
+        if teclas[pygame.K_a]: self.vx = -self.velocidade
+        if teclas[pygame.K_d]: self.vx = self.velocidade
+
+        if self.tipo_personagem == "Safira" and self.special_active and not self.eh_sapinho:
+            self.vy = -2  
+            self.esta_no_chao = False 
+            self.tempo_especial -= 1
+            if self.tempo_especial <= 0: 
+                self.special_active = False
+                self.cooldown_timer = self.tempo_recarga_maximo 
+        else:
+            self.vy += gravidade
+
+        if self.vy > 15: self.vy = 15
+
+        if (teclas[pygame.K_w] or teclas[pygame.K_SPACE]) and self.esta_no_chao:
+            self.vy = self.forca_pulo
+            self.esta_no_chao = False
+
+        if self.special_active and self.tipo_personagem != "Safira" and not self.eh_sapinho:
+            self.tempo_especial -= 1
+            if self.tempo_especial <= 0: 
+                self.special_active = False
+                self.cooldown_timer = self.tempo_recarga_maximo 
+
+        self.rect.x += self.vx
+        self.tratar_colisao(plataformas, 'x')
+        
+        if self.rect.left < 0:
+            self.rect.left = 0
+        elif self.rect.right > largura_tela:
+            self.rect.right = largura_tela
+
+        self.rect.y += self.vy
+        self.esta_no_chao = False
+        self.tratar_colisao(plataformas, 'y')
+
+    def tratar_colisao(self, plataformas, direcao):
+        for plat in plataformas:
+            if self.rect.colliderect(plat.rect):
+                if direcao == 'x':
+                    if self.vx > 0: self.rect.right = plat.rect.left
+                    if self.vx < 0: self.rect.left = plat.rect.right
+                elif direcao == 'y':
+                    if self.vy > 0:
+                        self.rect.bottom = plat.rect.top
+                        self.vy = 0
+                        self.esta_no_chao = True
+                    if self.vy < 0:
+                        self.rect.top = plat.rect.bottom
+                        self.vy = 0
+
+    def use_special(self):
+        if self.eh_sapinho:
+            return
+
+        if self.stars >= 30 and not self.special_active and self.cooldown_timer <= 0:
+            self.stars -= 30
+            self.special_active = True
+            if self.tipo_personagem == "Safira": self.tempo_especial = 180   
+            elif self.tipo_personagem == "Louise": self.tempo_especial = 60  
+            elif self.tipo_personagem == "Anika": self.tempo_especial = 150 
+            elif self.tipo_personagem == "Meliah": self.tempo_especial = 180 
+
+    def receber_dano(self):
+        if self.tempo_invulnerabilidade <= 0:
+            self.hearts -= 1
+            self.tempo_invulnerabilidade = 60
+
+    def atacar_inimigos(self, grupo_inimigos):
+        if self.eh_sapinho:
+            return
+
+        if self.tipo_personagem == "Louise" and self.special_active:
+            area_furacao = self.rect.inflate(100, 40) 
             
-        self.tela.blit(self.fonte.render(f"Especial: {status_especial}", True, cor_status), (250, 12))
-        self.tela.blit(self.fonte.render(f"Energia: {self.jogador.stars}%", True, (255, 215, 0)), (540, 12))
-        self.tela.blit(self.fonte.render(f"Flores: {self.jogador.flowers_collected}", True, (200, 100, 255)), (720, 12))
-        self.tela.blit(self.fonte.render(f"Score: {self.jogador.score}", True, (255, 255, 255)), (880, 12))
+            for inimigo_alvo in grupo_inimigos:
+                if area_furacao.colliderect(inimigo_alvo.rect):
+                    if hasattr(inimigo_alvo, 'receber_dano'):
+                        inimigo_alvo.receber_dano(dano=1) 
+                    elif hasattr(inimigo_alvo, 'kill'):
+                        inimigo_alvo.kill() 
 
-    def desenhar_ui_dialogo(self):
-        altura_caixa = 110
-        superficie_dialogo = pygame.Surface((largura_tela - 40, altura_caixa), pygame.SRCALPHA)
-        superficie_dialogo.fill((10, 10, 10, 220))
-        pygame.draw.rect(superficie_dialogo, (150, 100, 220), (0, 0, largura_tela - 40, altura_caixa), 2)
-        
-        self.tela.blit(superficie_dialogo, (20, altura_tela - altura_caixa - 20))
-        self.tela.blit(self.fonte.render(self.texto_dialogo, True, cor_texto), (40, altura_tela - altura_caixa - 5))
-        self.tela.blit(self.fonte.render(self.substituto_voz_dialogo, True, (150, 255, 150)), (40, altura_tela - altura_caixa + 30))
-        self.tela.blit(self.fonte.render("[Pressione 'E' para Continuar]", True, (180, 180, 180)), (700, altura_tela - 50))
-
-    def desenhar_texto_centralizado(self, texto, fonte, pos_y, cor=cor_texto):
-        superficie_texto = fonte.render(texto, True, cor)
-        retangulo_texto = superficie_texto.get_rect(center=(largura_tela // 2, pos_y))
-        self.tela.blit(superficie_texto, retangulo_texto)
-
-    def desenhar_botao_texto(self, texto, fonte, retangulo, cor_fundo_btn, cor_texto_btn):
-       
-        pygame.draw.rect(self.tela, cor_fundo_btn, retangulo, border_radius=5)
-        pygame.draw.rect(self.tela, (200, 200, 200), retangulo, 1, border_radius=5) 
-        
-        
-        superficie_texto = fonte.render(texto, True, cor_texto_btn)
-        retangulo_texto = superficie_texto.get_rect(center=retangulo.center)
-        self.tela.blit(superficie_texto, retangulo_texto)
-
-    def desenhar_texto_centralizado(self, texto, fonte, pos_y, cor=cor_texto):
-        superficie_texto = fonte.render(texto, True, cor)
-        retangulo_texto = superficie_texto.get_rect(center=(largura_tela // 2, pos_y))
-        self.tela.blit(superficie_texto, retangulo_texto)
+                    if inimigo_alvo.rect.centerx < self.rect.centerx:
+                        inimigo_alvo.rect.x -= 15  
+                    else:
+                        inimigo_alvo.rect.x += 15
