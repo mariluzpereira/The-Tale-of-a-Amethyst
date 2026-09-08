@@ -3,7 +3,7 @@ import math
 from configuracoes import cor_bruxa, cor_planta, cor_vespa, cor_boss
 from projeteis import projetil
 
-class inimigo(pygame.sprite.Sprite): #classe abstrata
+class inimigo(pygame.sprite.Sprite):
     def __init__(self, x, y, tipo_inimigo):
         super().__init__()
         self.enemy_type = tipo_inimigo  
@@ -37,7 +37,11 @@ class inimigo(pygame.sprite.Sprite): #classe abstrata
         if self.enemy_type == "Bruxa":
             self.tempo_recarga_tiro -= 1 * escala
             if self.tempo_recarga_tiro <= 0:
-                grupo_projeteis.add(projetil(self.rect.centerx, self.rect.centery, jogador_alvo.rect.centerx, jogador_alvo.rect.centery, eh_inimigo=True))
+                grupo_projeteis.add(projetil(
+                    self.rect.centerx, self.rect.centery, 
+                    jogador_alvo.rect.centerx, jogador_alvo.rect.centery, 
+                    eh_inimigo=True, tipo="pocao_bruxa"
+                ))
                 self.tempo_recarga_tiro = 120
 
         elif self.enemy_type == "Vespa":
@@ -56,5 +60,9 @@ class inimigo(pygame.sprite.Sprite): #classe abstrata
             self.tempo_recarga_tiro -= 1 * escala
             if self.tempo_recarga_tiro <= 0:
                 for desvio in [-40, 0, 40]:
-                    grupo_projeteis.add(projetil(self.rect.centerx, self.rect.centery, jogador_alvo.rect.centerx + desvio, jogador_alvo.rect.centery, eh_inimigo=True))
+                    grupo_projeteis.add(projetil(
+                        self.rect.centerx, self.rect.centery, 
+                        jogador_alvo.rect.centerx + desvio, jogador_alvo.rect.centery, 
+                        eh_inimigo=True, tipo="normal"
+                    ))
                 self.tempo_recarga_tiro = 90
