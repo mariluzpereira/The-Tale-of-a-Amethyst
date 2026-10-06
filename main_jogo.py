@@ -164,3 +164,20 @@ class jogador(pygame.sprite.Sprite):
                         inimigo_alvo.rect.x -= 15  
                     else:
                         inimigo_alvo.rect.x += 15
+
+class motorjogo:
+
+    def __init__(self):
+        pygame.init()
+        self.rodando = True
+
+    def executar(self):
+        while self.rodando:
+            self.eventos()
+
+        pygame.quit()
+
+    def eventos(self):
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                self.rodando = False
