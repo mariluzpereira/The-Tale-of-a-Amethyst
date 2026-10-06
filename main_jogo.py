@@ -3,6 +3,23 @@ from configuracoes import (
     gravidade, cor_safira, cor_louise, cor_anika, cor_meliah, largura_tela
 )
 
+class motorjogo:
+
+    def __init__(self):
+        pygame.init()
+        self.rodando = True
+
+    def executar(self):
+        while self.rodando:
+            self.eventos()
+
+        pygame.quit()
+
+    def eventos(self):
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                self.rodando = False
+
 class jogador(pygame.sprite.Sprite):
     def __init__(self, x, y, tipo_personagem):
         super().__init__()
@@ -164,20 +181,3 @@ class jogador(pygame.sprite.Sprite):
                         inimigo_alvo.rect.x -= 15  
                     else:
                         inimigo_alvo.rect.x += 15
-
-class motorjogo:
-
-    def __init__(self):
-        pygame.init()
-        self.rodando = True
-
-    def executar(self):
-        while self.rodando:
-            self.eventos()
-
-        pygame.quit()
-
-    def eventos(self):
-        for evento in pygame.event.get():
-            if evento.type == pygame.QUIT:
-                self.rodando = False
