@@ -142,3 +142,21 @@ Sistema de salvamento de progresso (Save Game).
 Novos tipos de ataques básicos desbloqueáveis.
 
 Modo de acessibilidade com alto contraste para as legendas.
+
+
+15. Diálogos(em processo de criação)
+
+Seleção de personagens:
+
+Anika: Nenhum ataque passa por mim. Vamos nessa! 
+
+Louise: Abre espaço que o furacão tá passando!
+
+Melia: Até o tempo adormece quando pedimos com gentileza. 
+
+Safira: Eai? Pronto pra dar uma voltinha?
+
+
+
+
+
