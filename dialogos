@@ -1,17 +1,54 @@
 Seleção de personagens:
 
 Anika: Nenhum ataque passa por mim. Vamos nessa! 
-
 Louise: Abre espaço que o furacão tá passando!
-
 Melia: Até o tempo adormece quando pedimos com gentileza. 
-
 Safira: Eai? Pronto pra dar uma voltinha?
 
 
 Inimigos: 
-  Planta
-Anika: Como você é mal humo
-Louise:
-Melia:
-Safira:
+planta
+Anika: "Que criatura desagradável. Vou acabar com isso rapidamente."
+Louise: "ECA! Essa planta precisa urgentemente de um dentista!"
+Melia: "Ora, ora... acho que alguém esqueceu as boas maneiras."
+Safira: "Cuidado com a mordida! Não quero perder um pedaço."
+
+bruxa
+Anika: "Poções? Truques baratos não vão funcionar comigo!"
+Louise: "EI! Eu não pedi uma transformação! Quero meu cabelo de volta!"
+Melia: "Transformar alguém sem consentimento? Que falta de delicadeza..."
+Safira: "Um sapo?! Ah, não! Isso definitivamente não combina comigo!"
+
+vespa
+Anika: "Não tenho tempo para lidar com você."
+Louise: "Por que será que os insetos sempre querem me perseguir?!"
+Melia: "Oh, querida... acho que você está um pouco agitada."
+Safira: "Está me seguindo por quê? Gostou de mim?"
+
+boss
+Anika: "Esse poder está consumindo você. Precisa parar!"
+Louise: "Ei! O que aconteceu com o Rei das Fadas?!"
+Melia: "A Ametista precisa voltar ao seu lugar. Seu poder não deveria estar em suas mãos."
+Safira: "Todo esse poder e ainda não foi suficiente pra você? Que ganância!"
+
+
+Pouca energia:	
+Anika:	"Preciso recuperar minhas forças."
+Louise:	"Ops... minha energia está acabando!"
+Melia:	"Talvez seja melhor descansar um pouquinho."
+Safira:	"Acho que preciso recarregar."
+
+
+Vitória:
+Anika: "Conseguimos! A Ametista está segura. Agora podemos restaurar o equilíbrio."
+Louise: "A Ametista está de volta! Da próxima vez, podiam simplesmente pedir emprestado..."
+Melia: "A Ametista finalmente poderá voltar ao seu lar. O equilíbrio será restaurado."
+Safira: "Joia recuperada, problema resolvido. Estou louca pra tirar um cochilo!"
+
+
+Habilidades:
+Anika: "Vamos ver quem consegue atravessar!"
+Louise: "Hora de fazer uma bagunça!"
+Melia: "Um momento de tranquilidade..."
+Safira: "O céu parece um lugar melhor para ficar."
+
