@@ -80,12 +80,12 @@ HISTORIA = [
 ]
 
 CREDITOS_MUSICAS = [
-    ("Menu", "Town Theme RPG - cynicmusic"),
+    ("Menu Principal", "Town Theme RPG - cynicmusic"),
     ("Prólogo", "Medieval - Miguel Herrero"),
-    ("Seleção de personagem", "Movie Theater Intro - Matthew Pablo"),
-    ("Combate", "Blackmoor Tides (Epic Pirate Battle Theme) - Matthew Pablo"),
-    ("Boss", "A Slave To No One (RPG Orchestral Essentials) - InspectorJ"),
-    ("Vitória", "Lively Meadow (Victory Fanfare and Song) - Matthew Pablo"),
-    ("Créditos", "Southern Pastures (Miniature Suite for Orchestra) - Matthew Pablo"),
-    ("Derrota", "Spiritwatcher - Matthew Pablo"),
+    ("Seleção de Personagem", "Movie Theater Intro - Matthew Pablo"),
+    ("Combate (Fases 1 a 4)", "Blackmoor Tides (Epic Pirate Battle Theme) - Matthew Pablo"),
+    ("Batalha de Chefe (Fase 5)", "A Slave To No One (RPG Orchestral Essentials) - InspectorJ"),
+    ("Tela de Vitória", "Lively Meadow (Victory Fanfare and Song) - Matthew Pablo"),
+    ("Créditos Finais", "Southern Pastures (Miniature Suite for Orchestra) - Matthew Pablo"),
+    ("Tela de Derrota", "Spiritwatcher - Matthew Pablo"),
 ]
