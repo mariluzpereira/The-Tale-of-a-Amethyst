@@ -16,7 +16,6 @@ CHAO_FLORESTA = 424
 CHAO_BOSS = 458
 
 FASES = {
-    # ---------------------------------------------------------------- 1: plantas
     1: dict(
         largura=3200, chao_y=CHAO_FLORESTA, fundo="floresta", tinta=None,
         musica="combate.mp3", estilo_plataforma=1,
@@ -31,7 +30,6 @@ FASES = {
                ("Flor", 380, 400), ("Flor", 950, 268), ("Flor", 1650, 400),
                ("Flor", 2250, 298), ("Flor", 3000, 400)],
     ),
-    # ---------------------------------------------------------------- 2: bruxas
     2: dict(
         largura=3400, chao_y=CHAO_FLORESTA, fundo="floresta", tinta=(255, 140, 60, 38),
         musica="combate.mp3", estilo_plataforma=1,
@@ -47,7 +45,6 @@ FASES = {
                ("Flor", 420, 400), ("Flor", 1220, 268), ("Flor", 1900, 400),
                ("Flor", 2450, 258), ("Flor", 3300, 400)],
     ),
-    # ---------------------------------------------------------------- 3: vespas
     3: dict(
         largura=3400, chao_y=CHAO_FLORESTA, fundo="floresta", tinta=(70, 200, 100, 34),
         musica="combate.mp3", estilo_plataforma=1,
@@ -63,7 +60,6 @@ FASES = {
                ("Flor", 300, 400), ("Flor", 1500, 400), ("Flor", 2000, 400),
                ("Flor", 2650, 400), ("Flor", 3250, 400)],
     ),
-    # ---------------------------------------------------------------- 4: os três juntos
     4: dict(
         largura=3600, chao_y=CHAO_FLORESTA, fundo="floresta", tinta=(80, 30, 120, 75),
         musica="combate.mp3", estilo_plataforma=1,
@@ -82,7 +78,6 @@ FASES = {
                ("Flor", 350, 400), ("Flor", 990, 270), ("Flor", 1850, 400),
                ("Flor", 2650, 300), ("Flor", 3450, 400)],
     ),
-    # ---------------------------------------------------------------- 5: boss
     5: dict(
         largura=1024, chao_y=CHAO_BOSS, fundo="boss", tinta=None,
         musica="boss.mp3", estilo_plataforma=2,
@@ -101,8 +96,6 @@ def construir_fase(mundo, numero):
     mundo.limite_direito = d["largura"]
     mundo.fase_limpa = False
 
-    # chão sólido (invisível: o cenário já desenha o chão); se estende além
-    # da borda direita para a princesa poder sair andando
     mundo.plataformas.add(plataforma(-200, d["chao_y"], d["largura"] + 700, 400, eh_chao=True))
     for (x, y, w) in d["plataformas"]:
         mundo.plataformas.add(plataforma(x, y, w, 14, estilo=d["estilo_plataforma"]))
