@@ -2,7 +2,7 @@ import math
 import random
 import pygame
 import recursos as rec
-from configuracoes import altura_tela, dano_tiro_jogador
+from configuracoes import altura_tela, dano_tiro_jogador, vel_orbe_boss, vel_fogo_boss, dano_fogo_boss
 
 
 class projetil(pygame.sprite.Sprite):
@@ -10,6 +10,7 @@ class projetil(pygame.sprite.Sprite):
        'basico'       tiro da princesa (anima com os power_*.png)
        'pocao_bruxa'  poção arremessada em arco: transforma em sapinho
        'orbe'         bola de energia do Rei das Fadas
+       'bola_fogo'    bola de fogo grande do Rei das Fadas
     """
 
     def __init__(self, x, y, alvo_x, alvo_y, eh_inimigo=False, tipo="normal",
@@ -31,7 +32,7 @@ class projetil(pygame.sprite.Sprite):
 
         if tipo == "pocao_bruxa":
             # arco: escolhe o tempo de voo e calcula a velocidade inicial
-            tempo = max(38, min(85, dist / 6.5))
+            tempo = max(34, min(75, dist / 7.5))
             self.grav = 0.32
             self.vx = dx / tempo
             self.vy = (dy - 0.5 * self.grav * tempo * tempo) / tempo
@@ -61,8 +62,26 @@ class projetil(pygame.sprite.Sprite):
                 pygame.draw.circle(self.image, (0, 255, 255), (7, 7), 4)
             self.rect = pygame.Rect(0, 0, 26, 18)
             self.vida = 70
+        elif tipo == "bola_fogo":
+            velocidade = vel_fogo_boss
+            self.dano = dano_fogo_boss
+            self.vx = dx / dist * velocidade
+            self.vy = dy / dist * velocidade
+            # 3 quadros com a chama "pulsando"
+            self.quadros = []
+            for raio in (20, 23, 21):
+                img = pygame.Surface((50, 50), pygame.SRCALPHA)
+                pygame.draw.circle(img, (255, 70, 20, 90), (25, 25), raio + 3)
+                pygame.draw.circle(img, (255, 110, 25), (25, 25), raio)
+                pygame.draw.circle(img, (255, 170, 40), (25, 25), int(raio * 0.7))
+                pygame.draw.circle(img, (255, 230, 120), (25, 25), int(raio * 0.42))
+                pygame.draw.circle(img, (255, 255, 230), (25, 25), int(raio * 0.2))
+                self.quadros.append(img)
+            self.image = self.quadros[0]
+            self.rect = pygame.Rect(0, 0, 32, 32)
+            self.vida = 320
         else:  # orbe do boss
-            velocidade = 5.2
+            velocidade = vel_orbe_boss
             self.vx = dx / dist * velocidade
             self.vy = dy / dist * velocidade
             self.image = pygame.Surface((24, 24), pygame.SRCALPHA)
@@ -86,6 +105,9 @@ class projetil(pygame.sprite.Sprite):
         if self.quadros:
             self.indice += 0.4
             self.image = self.quadros[int(self.indice) % len(self.quadros)]
+            if self.tipo == "bola_fogo" and int(self.vida) % 3 == 0:
+                mundo.emitir(self.rect.centerx, self.rect.centery, (255, 150, 40), n=1,
+                             vel=1.2, vida=18, raio=4, grav=-0.02)
         elif self.tipo == "pocao_bruxa":
             self.angulo_giro += 9 * escala
             self.image = pygame.transform.rotate(self.base, self.angulo_giro)
@@ -103,6 +125,9 @@ class projetil(pygame.sprite.Sprite):
     def estourar(self, mundo):
         if self.tipo == "pocao_bruxa":
             mundo.emitir(self.rect.centerx, self.rect.centery, (80, 230, 80), n=14, vel=3.5)
+            mundo.audio.tocar("quebra")
+        elif self.tipo == "bola_fogo":
+            mundo.emitir(self.rect.centerx, self.rect.centery, (255, 150, 40), n=20, vel=4.5, vida=30, raio=4)
             mundo.audio.tocar("quebra")
         elif self.eh_inimigo:
             mundo.emitir(self.rect.centerx, self.rect.centery, (230, 80, 140), n=6, vel=2.5)

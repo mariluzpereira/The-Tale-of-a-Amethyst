@@ -35,9 +35,10 @@ class item(pygame.sprite.Sprite):
 
     _cache = {}
 
-    def __init__(self, x, y, tipo_item):
+    def __init__(self, x, y, tipo_item, ttl=None):
         super().__init__()
         self.item_type = tipo_item
+        self.ttl = ttl                  # frames até sumir (itens soltos por inimigos)
         self.base_y = y
         self.fase = (x * 0.013) % 6.28
         self.image = self._imagem(tipo_item)
@@ -66,3 +67,36 @@ class item(pygame.sprite.Sprite):
 
     def update(self, tempo):
         self.rect.centery = int(self.base_y + math.sin(tempo * 0.06 + self.fase) * 5)
+        if self.ttl is not None:
+            self.ttl -= 1
+            if self.ttl <= 0:
+                self.kill()
+
+    @property
+    def piscando(self):
+        """Nos últimos 2 segundos o item solto pisca (some do desenho em intervalos)."""
+        return self.ttl is not None and self.ttl < 120 and (self.ttl // 6) % 2 == 0
+
+
+class fada(pygame.sprite.Sprite):
+    """NPC: a Fadinha. Paira no cenário; perto dela, aperte E para conversar."""
+
+    def __init__(self, x, y):
+        super().__init__()
+        base = rec.imagem("fadinha.png")
+        if base is not None:
+            self.image = rec.escalar_altura(rec.recortar(base), 76, suave=True)
+        else:
+            self.image = pygame.Surface((50, 60), pygame.SRCALPHA)
+            pygame.draw.circle(self.image, (255, 200, 60), (25, 30), 22)
+        self.image_esq = pygame.transform.flip(self.image, True, False)   # a sprite original olha p/ a direita
+        self.rect = self.image.get_rect(center=(x, y))
+        self.base_y = y
+        self.falou = False
+
+    def update(self, tempo):
+        self.rect.centery = int(self.base_y + math.sin(tempo * 0.05) * 8)
+
+    def perto(self, jogadora, alcance=150):
+        return (abs(jogadora.rect.centerx - self.rect.centerx) < alcance
+                and abs(jogadora.rect.centery - self.rect.centery) < alcance + 60)

@@ -15,12 +15,14 @@ class Mundo:
         self.proj_inimigos = pygame.sprite.Group()
         self.proj_jogador = pygame.sprite.Group()
         self.itens = pygame.sprite.Group()
+        self.npcs = pygame.sprite.Group()
         self.particulas = []
         self.largura = 1024
         self.chao_y = 424
         self.limite_direito = 1024
         self.tempo = 0
         self.fase_limpa = False
+        self.controles = None        # preenchido pelo motor (teclas configuráveis)
         self.eventos = []            # recados para o motor: ("boss_fase", n)
 
     # ------------------------------------------------------------ partículas
@@ -48,15 +50,15 @@ class Mundo:
             pygame.draw.circle(tela, p[6], (int(p[0] - cam_x), int(p[1])), r)
 
     # ------------------------------------------------------------ itens
-    def soltar_item(self, tipo, x, y):
-        self.itens.add(item(int(x), int(y), tipo))
+    def soltar_item(self, tipo, x, y, ttl=None):
+        self.itens.add(item(int(x), int(y), tipo, ttl))
+        self.audio.tocar("item_surge")
 
     # ------------------------------------------------------------ boss
     def boss_mudou_de_fase(self, boss, fase):
         self.audio.tocar("boss_rugido")
         self.emitir(boss.rect.centerx, boss.rect.centery, (210, 120, 255), n=40, vel=6, vida=40, raio=5)
-        # presentinhos para a jogadora respirar entre as fases do chefe
-        self.soltar_item("Maca", self.largura // 2, 215)
-        self.soltar_item("Estrela", 235, 300)
-        self.soltar_item("Estrela", self.largura - 235, 300)
+        # um respiro entre as fases do chefe (a maçã fica em cima da plataforma mais alta)
+        self.soltar_item("Maca", self.largura // 2, 215, ttl=900)
+        self.soltar_item("Estrela", 235 if fase == 2 else self.largura - 235, 300, ttl=900)
         self.eventos.append(("boss_fase", fase))
