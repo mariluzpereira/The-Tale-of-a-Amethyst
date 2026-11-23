@@ -298,7 +298,7 @@ def desenhar_botao(tela, imagem_botao, rotulo, centro, selecionado):
         r = imagem_botao.get_rect(center=centro)
         tela.blit(imagem_botao, r)
     else:
-        r = pygame.Rect(0, 0, 172, 44)
+        r = pygame.Rect(0, 0, max(172, fonte(28).size(rotulo)[0] + 40), 44)
         r.center = centro
         pygame.draw.rect(tela, (255, 150, 255), r, border_radius=6)
         pygame.draw.rect(tela, (60, 20, 90), r, 3, border_radius=6)

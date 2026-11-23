@@ -118,10 +118,17 @@ class motorjogo:
         self.transicao = None
         self.voltar_para = "menu"
         self.pontos_finais = None
-        self.easter_ativo = False
-        self.easter_timer = 0
+        self.gnomo_estado = "nenhum"     # nenhum | escondido | indo | dancando | saindo
+        self.gnomo_t = 0
         self.easter_feito = False
         self.musica_antes_egg = None
+        self.ignorar_tiro = False
+        self.gnomo_via_trilha = False      # True: música do gnomo toca por cima e a da fase só pausa
+        self.opcoes_volta = "menu"       # de onde as Opções foram abertas: "menu" ou "pausa"
+        self.pausa_sel = 0
+        self.aviso_balao = None          # quadro pequeno de aviso sobre a personagem
+        self._poder_pronto_antes = True
+        self._vida_baixa_antes = False
         self.capturando = False          # Opções: esperando o jogador apertar uma tecla
         self.opcao_slot = 0
         self.mensagem_opcoes = ""
@@ -170,6 +177,10 @@ class motorjogo:
         for nome, arq in (("Jogar", "jogar.png"), ("Opções", "opcoes.png"), ("Créditos", "creditos.png")):
             im = rec.imagem(arq)
             self.botoes_img[nome] = rec.escalar_altura(rec.recortar(im), 40) if im is not None else None
+        # animação final das personagens (ainda em produção): quando existirem os arquivos
+        # animacao_final(1).png, animacao_final(2).png ... ela passa a aparecer sozinha na tela final
+        self.animacao_final = rec.carregar_quadros("animacao_final({})", 300)
+
         sair = rec.imagem("sair.png")
         self.botoes_img["Sair"] = rec.escalar_altura(rec.recortar(sair), 40) if sair is not None else None
 
@@ -202,6 +213,11 @@ class motorjogo:
 
     # ------------------------------------------------------------------ estados
     def entrar_estado(self, nome):
+        if self.gnomo_estado in ("indo", "dancando", "saindo"):
+            # saiu (menu/derrota...) no meio da dança: encerra a trilha do gnomo sem deixar nada pendurado
+            self.audio.parar_trilha_extra()
+            self.audio.definir_volume_musica(self.audio.volume_musica)
+            self.gnomo_estado = "nenhum"
         self.estado = nome
         self.transicao = None
         if nome == "menu":
@@ -214,10 +230,12 @@ class motorjogo:
             self.sel_confirmado = 0
         elif nome == "prologo":
             self.audio.musica("prologo.ogg")
-            self.prologo_y = float(altura_tela)
+            self.prologo_y = float(self.PROLOGO_AREA_TEXTO.bottom)
             self._montar_prologo()
         elif nome == "fada":
             self.audio.tocar("fada")
+        elif nome == "fim":
+            self.fim_t = 0          # mantém a música dos créditos
         elif nome == "derrota":
             self.audio.musica("derrota.mp3", repetir=False)
         elif nome == "vitoria":
@@ -263,6 +281,7 @@ class motorjogo:
             self.entrar_estado("selecao")
         elif nome == "Opções":
             self.opcao_sel = 0
+            self.opcoes_volta = "menu"
             self.entrar_estado("opcoes")
         elif nome == "Créditos":
             self.voltar_para = "menu"
@@ -334,6 +353,15 @@ class motorjogo:
             self.audio.definir_volume_sfx(v)
             self.audio.tocar("item")
 
+    def _sair_das_opcoes(self):
+        """Volta para onde as Opções foram abertas: menu principal ou menu de pausa."""
+        if self.opcoes_volta == "pausa":
+            self.opcoes_volta = "menu"
+            self.estado = "jogando"
+            self.pausado = True
+        else:
+            self.entrar_estado("menu")
+
     def _ativar_opcao(self, i):
         if i == 2:
             self.controles.restaurar_padrao()
@@ -341,7 +369,7 @@ class motorjogo:
             self.audio.tocar("tecla_ok")
         elif i == 3:
             self.audio.tocar("ui_voltar")
-            self.entrar_estado("menu")
+            self._sair_das_opcoes()
         elif i >= self.NUM_LINHAS_ESQ:
             self.capturando = True
             self.mensagem_opcoes = ""
@@ -383,7 +411,7 @@ class motorjogo:
             if ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE:
                     self.audio.tocar("ui_voltar")
-                    self.entrar_estado("menu")
+                    self._sair_das_opcoes()
                     return
                 if ev.key in (pygame.K_UP, pygame.K_w):
                     self.opcao_sel = (self.opcao_sel - 1) % total
@@ -577,13 +605,27 @@ class motorjogo:
 
     # ================================================================== PRÓLOGO
     VELOCIDADE_PROLOGO = 0.30           # pixels por frame (antes 0.6: agora o texto é mais lento)
+    # O texto da história rola DENTRO de uma caixa roxa (assim lê-se bem sobre qualquer cenário)
+    PROLOGO_CAIXA = pygame.Rect(100, 36, 824, 504)
+    PROLOGO_AREA_TEXTO = pygame.Rect(124, 58, 776, 432)
 
     def _montar_prologo(self):
         self.prologo_linhas = []
         for par in falas.HISTORIA:
-            self.prologo_linhas += quebrar_texto(par, 34, 800)
+            self.prologo_linhas += quebrar_texto(par, 34, 730)
             self.prologo_linhas.append("")
         self.prologo_altura = len(self.prologo_linhas) * 42
+        self._caixa_prologo = None
+
+    def _caixa_roxa_prologo(self):
+        if getattr(self, "_caixa_prologo", None) is None:
+            cx = self.PROLOGO_CAIXA
+            sup = pygame.Surface(cx.size, pygame.SRCALPHA)
+            pygame.draw.rect(sup, (84, 44, 148, 240), sup.get_rect(), border_radius=16)
+            pygame.draw.rect(sup, (60, 28, 110, 255), sup.get_rect().inflate(-16, -16), 3, border_radius=12)
+            pygame.draw.rect(sup, (214, 170, 255, 255), sup.get_rect(), 4, border_radius=16)
+            self._caixa_prologo = sup
+        return self._caixa_prologo
 
     def _terminar_prologo(self):
         self._iniciar_fada("prologo")
@@ -599,23 +641,27 @@ class motorjogo:
         teclas = pygame.key.get_pressed()
         acelerar = self.controles.tecla("descer", teclas)
         self.prologo_y -= 2.2 if acelerar else self.VELOCIDADE_PROLOGO
-        if self.prologo_y + self.prologo_altura < 60:
+        area = self.PROLOGO_AREA_TEXTO
+        if self.prologo_y + self.prologo_altura < area.top:
             self._terminar_prologo()
             return
 
-        # cenário do prólogo (cenario_prologo.jpg) com um leve escurecido para o texto aparecer
+        # cenário do prólogo (cenario_prologo.jpg) e, por cima, a caixa roxa com o texto
         if self.bg_prologo is not None:
             self.tela.blit(self.bg_prologo, (0, 0))
         else:
             self._fundo_menu(60)
-        escurecer(self.tela, 85)
+        self.tela.blit(self._caixa_roxa_prologo(), self.PROLOGO_CAIXA.topleft)
+        self.tela.set_clip(area)                  # o texto só aparece dentro da caixa
         y = int(self.prologo_y)
         for linha in self.prologo_linhas:
-            if -40 < y < altura_tela:
-                texto(self.tela, linha, 34, (255, 250, 255), (largura_tela // 2, y), centro=True)
+            if area.top - 40 < y < area.bottom:
+                texto(self.tela, linha, 34, (255, 252, 255), (area.centerx, y), centro=True)
             y += 42
-        texto(self.tela, "Enter ou clique: pular    %s: acelerar" % self.controles.nome_acao("descer"), 24,
-              (235, 225, 245), (largura_tela // 2, altura_tela - 22), centro=True)
+        self.tela.set_clip(None)
+        texto(self.tela, "Enter ou clique: pular    %s: acelerar" % self.controles.nome_acao("descer"), 22,
+              (226, 208, 252), (self.PROLOGO_CAIXA.centerx, self.PROLOGO_CAIXA.bottom - 24), centro=True,
+              sombra=False)
 
     # ================================================================== CASA DA FADA (conversa e tutorial)
     # Cena à parte: fundo casa_fada, SEM inimigos. Aparece depois do prólogo e também
@@ -835,8 +881,8 @@ class motorjogo:
         self.dialogo.limpar()
         self.dialogo.ultimo.clear()
         self.energia_baixa_avisada = False
-        self.easter_timer = 0
-        self.easter_ativo = False
+        self.gnomo_estado = "nenhum"
+        self.gnomo_via_trilha = False
         self.easter_feito = False
         self.carregar_fase(1)
         self.estado = "jogando"
@@ -861,6 +907,9 @@ class motorjogo:
             self.snap = (j.score, j.flowers_collected)
 
         self.cam_x = 0.0
+        self.aviso_balao = None
+        self._poder_pronto_antes = (j.stars >= custo_poder and not j.eh_sapinho)
+        self._vida_baixa_antes = 0 < j.hearts <= 1
         self.pausado = False
         self.boss_derrotado = False
         self.morte_timer = 0
@@ -869,15 +918,19 @@ class motorjogo:
         self.audio.musica(self.dados["musica"])
         if numero > 1 and not tentativa:
             self.audio.tocar("fase_nova")
+        # gnomo do easter egg: continua escondido no canto se as 20 flores já foram juntadas
+        self.gnomo_estado = "escondido" if (j.flowers_collected >= total_flores_easter_egg
+                                            and not self.easter_feito) else "nenhum"
+        self._dialogos_de_abertura()
 
     def proxima_fase(self):
         self.carregar_fase(self.fase_num + 1)
 
-    def falar(self, chave, intervalo=600):
+    def falar(self, chave, intervalo=600, bloqueia=False):
         tipo = self.escolhido
         frase = falas.FALAS[tipo][chave]
         if self.dialogo.mostrar(chave, falas.NOME_EXIBIDO[tipo], frase, rec.rosto(tipo),
-                                self.frames, intervalo):
+                                self.frames, intervalo, bloqueia):
             self.audio.voz(nomes_arquivo[tipo], chave)
 
     def _sequencia(self, chave, nome, rosto, frases):
@@ -896,47 +949,137 @@ class motorjogo:
                 self._iniciar_fada("jogo")
                 return
 
+    # ---- avisos: um quadrinho em cima da personagem que some sozinho depois de 5 segundos
+    DURACAO_AVISO = 300
+
+    def _avisar(self, mensagem, cor):
+        self.aviso_balao = {"texto": mensagem, "cor": cor, "t": 0}
+
+    def _checar_avisos(self):
+        """Dispara os avisos quando algo MUDA (poder ficou pronto, vida baixa)."""
+        j = self.jogador
+        pronto = (j.stars >= custo_poder and not j.special_active and j.cooldown_timer <= 0
+                  and not j.eh_sapinho)
+        if pronto and not self._poder_pronto_antes:
+            self._avisar("Poder pronto!", (255, 225, 110))
+            self.audio.tocar("poder_pronto")
+        self._poder_pronto_antes = pronto
+        baixa = 0 < j.hearts <= 1
+        if baixa and not self._vida_baixa_antes:
+            self._avisar("Vida acabando! Procure uma maçã", (255, 120, 130))
+        self._vida_baixa_antes = baixa
+
     def usar_poder(self):
         j = self.jogador
         r = j.use_special(self.mundo)
         if r == "ok":
             self.falar("habilidade", 900)
             if j.stars < custo_poder:
-                self.falar("pouca_energia", 480)
-                self.energia_baixa_avisada = True
+                self._avisar("Energia baixa! Pegue estrelas", (130, 200, 255))
         elif r == "sem_energia":
             self.audio.tocar("sem_energia")
-            self.falar("pouca_energia", 300)
+            self._avisar("Sem energia! Pegue estrelas", (130, 200, 255))
 
     def _iniciar_fade(self, acao):
         self.transicao = {"modo": "escurecendo", "alpha": 0, "acao": acao}
 
     # ================================================================== LOOP DA FASE
+    # ---- menu de pausa: a mesma imagem do menu, com Continuar / Opções / Menu principal / Sair
+    ITENS_PAUSA = ["Continuar", "Opções", "Menu principal", "Sair"]
+
+    def _rects_pausa(self):
+        rects = []
+        for i in range(len(self.ITENS_PAUSA)):
+            r = pygame.Rect(0, 0, 250, 42)
+            r.center = (self.miolo.centerx, self.miolo.top + 120 + i * 48)
+            rects.append(r)
+        return rects
+
+    def _ativar_pausa(self, i):
+        item_ = self.ITENS_PAUSA[i]
+        if item_ == "Continuar":
+            self.pausado = False
+            self.audio.tocar("retomar")
+        elif item_ == "Opções":
+            self.audio.tocar("menu")
+            self.opcao_sel = 0
+            self.opcoes_volta = "pausa"
+            self.estado = "opcoes"
+        elif item_ == "Menu principal":
+            self.audio.tocar("ui_voltar")
+            self.pausado = False
+            self.audio.parar_musica()
+            self.entrar_estado("menu")
+        else:
+            self.rodando = False
+
+    def _evento_pausa(self, ev):
+        rects = self._rects_pausa()
+        if ev.type == pygame.KEYDOWN:
+            if ev.key == pygame.K_ESCAPE or self.controles.evento("pausar", ev):
+                self.pausado = False
+                self.audio.tocar("retomar")
+            elif ev.key in (pygame.K_UP, pygame.K_w):
+                self.pausa_sel = (self.pausa_sel - 1) % len(rects)
+                self.audio.tocar("menu")
+            elif ev.key in (pygame.K_DOWN, pygame.K_s):
+                self.pausa_sel = (self.pausa_sel + 1) % len(rects)
+                self.audio.tocar("menu")
+            elif ev.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_KP_ENTER):
+                self._ativar_pausa(self.pausa_sel)
+        elif ev.type == pygame.MOUSEMOTION:
+            for i, r in enumerate(rects):
+                if r.collidepoint(ev.pos) and self.pausa_sel != i:
+                    self.pausa_sel = i
+                    self.audio.tocar("menu")
+        elif ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
+            for i, r in enumerate(rects):
+                if r.collidepoint(ev.pos):
+                    self.pausa_sel = i
+                    self._ativar_pausa(i)
+
+    def _desenhar_menu_pausa(self):
+        if self.painel is not None:
+            self.tela.blit(self.painel, (0, 0))
+        else:
+            self.tela.fill((95, 53, 165))
+        texto(self.tela, "Jogo pausado", 56, (255, 240, 255), (self.miolo.centerx, self.miolo.top + 44), centro=True)
+        imagens = {"Opções": self.botoes_img.get("Opções"), "Sair": self.botoes_img.get("Sair")}
+        for i, (nome, r) in enumerate(zip(self.ITENS_PAUSA, self._rects_pausa())):
+            desenhar_botao(self.tela, imagens.get(nome), nome.upper(), r.center, i == self.pausa_sel)
+        texto(self.tela, "%s ou Esc: continuar" % self.controles.nome_acao("pausar").split(" / ")[0], 24,
+              (230, 218, 250), (largura_tela // 2, altura_tela - 40), centro=True)
+
     def estado_jogando(self, eventos):
         for ev in eventos:
             c = self.controles
+            if self.pausado:
+                self._evento_pausa(ev)
+                if self.estado != "jogando":
+                    return
+                continue
             if ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE or c.evento("pausar", ev):
-                    self.pausado = not self.pausado
-                    self.audio.tocar("pausa" if self.pausado else "retomar")
-                elif self.pausado and ev.key in (pygame.K_RETURN, pygame.K_SPACE):
-                    self.pausado = False
-                    self.audio.tocar("retomar")
-                elif self.pausado and ev.key == pygame.K_m:
-                    self.audio.parar_musica()
-                    self.entrar_estado("menu")
-                    return
-                elif self.dialogo.bloqueando and (c.evento("interagir", ev)
-                                                  or ev.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_KP_ENTER)):
+                    self.pausado = True
+                    self.pausa_sel = 0
+                    self.audio.tocar("pausa")
+                    continue
+                if self.dialogo.bloqueando and (c.evento("interagir", ev)
+                                                or ev.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_KP_ENTER)):
                     self.dialogo.avancar()
                 elif c.evento("interagir", ev):
                     if self.dialogo.atual is not None:
                         self.dialogo.fechar()
-                    elif not self.pausado:
+                    else:
                         self._interagir()
             elif ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1 and self.dialogo.bloqueando:
                 self.dialogo.avancar()
-            if (c.evento("poder", ev) and not self.pausado and self.transicao is None
+            elif (ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1 and self.gnomo_estado == "escondido"
+                  and self.transicao is None and not self.jogador.morta
+                  and self.gnomos and self._rect_gnomo().inflate(36, 36).collidepoint(ev.pos)):
+                self._iniciar_gnomo()
+                self.ignorar_tiro = True        # esse clique não vira um tiro
+            if (c.evento("poder", ev) and self.transicao is None
                     and not self.jogador.morta and not self.dialogo.bloqueando):
                 self.usar_poder()
         if not self.pausado:
@@ -950,12 +1093,8 @@ class motorjogo:
         j, m = self.jogador, self.mundo
         m.tempo += 1
         self.dialogo.atualizar()
-        if self.dialogo.bloqueando:
-            return              # cena de fala: o jogo espera (E / Enter / clique avança)
-        for n in m.npcs:
-            n.update(m.tempo)
 
-        # ---- transição (fade) entre fases
+        # ---- transição (fade) entre fases (vem antes das falas: a tela precisa clarear com a fala aberta)
         t = self.transicao
         if t is not None:
             if t["modo"] == "escurecendo":
@@ -970,6 +1109,24 @@ class motorjogo:
                 if t["alpha"] <= 0:
                     self.transicao = None
 
+        # ---- faixa com o nome da fase (conta mesmo durante as falas)
+        if self.banner:
+            self.banner[2] -= 1
+            if self.banner[2] <= 0:
+                self.banner = None
+
+        if self.dialogo.bloqueando:
+            return              # fala em andamento: NADA se mexe (avança com a tecla de interagir / Enter / clique)
+        if self.gnomo_estado in ("indo", "dancando", "saindo"):
+            self._atualizar_gnomo()
+            return              # o gnomo dança no meio da tela: o jogo espera
+        for n in m.npcs:
+            n.update(m.tempo)
+
+        # Abertura da fase: enquanto aparece a faixa (e as falas ainda não terminaram) o combate
+        # não começou: os inimigos ficam parados e inofensivos.
+        em_abertura = self.banner is not None or self.transicao is not None
+
         morta = j.morta
         controle = self.transicao is None and not morta and not self.boss_derrotado
         teclas = pygame.key.get_pressed() if controle else SEM_TECLAS
@@ -980,20 +1137,24 @@ class motorjogo:
 
         if not morta:
             j.update(teclas, m)
-            if controle and not self.pausado and \
+            if self.ignorar_tiro and not pygame.mouse.get_pressed()[0]:
+                self.ignorar_tiro = False
+            if controle and not self.pausado and not self.ignorar_tiro and \
                     self.controles.segurando("atirar", teclas, pygame.mouse.get_pressed()):
                 mx, my = pygame.mouse.get_pos()
                 j.atirar((mx + int(self.cam_x), my), m.proj_jogador, m)
 
-        if j.stars >= custo_poder:
-            if self.energia_baixa_avisada:
-                self.audio.tocar("poder_pronto")
-            self.energia_baixa_avisada = False
+        if not morta:
+            self._checar_avisos()
+        if self.aviso_balao is not None:
+            self.aviso_balao["t"] += 1
+            if self.aviso_balao["t"] >= self.DURACAO_AVISO or morta:
+                self.aviso_balao = None
         # alerta sonoro de vida baixa (um batimento a cada 1,5 s)
         if not morta and j.hearts == 1 and m.tempo % 90 == 0:
             self.audio.tocar("coracao_baixo")
 
-        if not morta:
+        if not morta and not em_abertura:
             for e in m.inimigos:
                 e.update(j, escala, m)
         for p in m.proj_jogador:
@@ -1005,11 +1166,11 @@ class motorjogo:
         m.atualizar_particulas()
 
         if not morta:
-            j.atacar_inimigos(m.inimigos, m.proj_inimigos, m)
-            self._colisoes()
+            if not em_abertura:
+                j.atacar_inimigos(m.inimigos, m.proj_inimigos, m)
+            self._colisoes(combate=not em_abertura)
             self._recompensas()
             self._eventos_do_mundo()
-            self._dialogos_automaticos()
             self._progresso_da_fase()
 
         # ---- morte da jogadora
@@ -1024,30 +1185,18 @@ class motorjogo:
                 self.entrar_estado("derrota")
                 return
 
-        # ---- easter egg: toca easter_egg_musica.mp3 e depois volta para a música da fase
-        if self.easter_ativo:
-            self.easter_timer -= 1
-            terminou = self.audio.ativo and self.audio.musica_atual == "easter_egg_musica.mp3" \
-                and not self.audio.tocando()
-            if terminou or self.easter_timer <= 0:
-                self.easter_ativo = False
-                if self.easter_timer <= 0:
-                    self.audio.parar_musica()
-                self.audio.musica(self.musica_antes_egg or self.dados["musica"])
-
         # ---- câmera
         alvo = j.rect.centerx - largura_tela / 2
         alvo = max(0, min(alvo, max(0, m.largura - largura_tela)))
         self.cam_x += (alvo - self.cam_x) * 0.15
-        if self.banner:
-            self.banner[2] -= 1
-            if self.banner[2] <= 0:
-                self.banner = None
 
     # ------------------------------------------------------------------ colisões
-    def _colisoes(self):
+    def _colisoes(self, combate=True):
         j, m = self.jogador, self.mundo
         cor = cor_particula.get(j.tipo_personagem, (255, 255, 255))
+        if not combate:
+            self._coletar_itens()
+            return
 
         # tiros da princesa x inimigos
         for p in list(m.proj_jogador):
@@ -1076,7 +1225,6 @@ class motorjogo:
                 j.tempo_invulnerabilidade = 60
                 self.audio.tocar("sapo")
                 m.emitir(j.rect.centerx, j.rect.centery, (90, 230, 90), n=22, vel=4)
-                self.falar("bruxa", 900)
                 p.kill()
             else:
                 if j.receber_dano(p.rect.centerx, forca=p.dano):
@@ -1095,7 +1243,10 @@ class motorjogo:
                 self.audio.tocar("dano")
                 e.ao_ferir_jogador()
 
-        # itens
+        self._coletar_itens()
+
+    def _coletar_itens(self):
+        j, m = self.jogador, self.mundo
         for it in list(m.itens):
             if it.rect.colliderect(j.rect):
                 self._coletar(it)
@@ -1121,13 +1272,11 @@ class motorjogo:
             j.score += 30
             self.audio.tocar("flor")
             m.emitir(it.rect.centerx, it.rect.centery, (255, 150, 220), n=10)
-            if j.flowers_collected == total_flores_easter_egg and not self.easter_feito:
-                self.easter_feito = True
-                self.easter_ativo = True
-                self.easter_timer = 60 * 16                    # limite de segurança (a música tem ~14 s)
-                self.musica_antes_egg = self.audio.musica_atual
-                self.audio.tocar("easter_egg")
-                self.audio.musica("easter_egg_musica.mp3", repetir=False)
+            if j.flowers_collected >= total_flores_easter_egg and not self.easter_feito \
+                    and self.gnomo_estado == "nenhum":
+                # sem aviso: um gnomo passa a espiar de um canto da tela (clique nele!)
+                self.gnomo_estado = "escondido"
+                self.audio.tocar("gnomo_aparece")
         it.kill()
 
     # ------------------------------------------------------------------ recompensas
@@ -1169,21 +1318,20 @@ class motorjogo:
             if nome == "boss_fase":
                 pass    # espaço para falas/efeitos extras de cada fase do chefe
 
-    def _dialogos_automaticos(self):
-        m = self.mundo
-        area = pygame.Rect(int(self.cam_x), 0, largura_tela, altura_tela)
-        # a bruxa se apresenta (e avisa do sapo) na primeira vez que aparece, depois do banner da fase
-        if "bruxa_intro" not in self.vistos and self.banner is None:
-            if any(e.enemy_type == "Bruxa" and area.colliderect(e.rect) for e in m.inimigos):
-                self.vistos.add("bruxa_intro")
+    def _dialogos_de_abertura(self):
+        """Falas ligadas aos inimigos desta fase. Acontecem ANTES do combate (o jogo fica parado
+        até todas terminarem) e só uma vez por partida para cada tipo de inimigo."""
+        tipos = {e.enemy_type for e in self.mundo.inimigos}
+        for tipo, chave in (("Planta", "planta"), ("Bruxa", "bruxa_intro"), ("Vespa", "vespa"), ("Boss", "boss")):
+            if tipo not in tipos or chave in self.vistos:
+                continue
+            self.vistos.add(chave)
+            if chave == "bruxa_intro":
                 frases = falas.BRUXA_ABERTURA + [falas.BRUXA_PERSONALIZADA[self.escolhido], falas.BRUXA_FINAL]
                 self._sequencia("bruxa_intro", "Bruxa", rec.rosto("bruxa"), frases)
-        mapa = {"Planta": "planta", "Vespa": "vespa", "Boss": "boss"}
-        for e in m.inimigos:
-            chave = mapa.get(e.enemy_type)
-            if chave and chave not in self.vistos and area.colliderect(e.rect):
-                self.vistos.add(chave)
-                self.falar(chave, 0)
+                self.falar("bruxa", 0, bloqueia=True)        # a princesa responde antes de a luta começar
+            else:
+                self.falar(chave, 0, bloqueia=True)
 
     def _progresso_da_fase(self):
         j, m = self.jogador, self.mundo
@@ -1231,6 +1379,7 @@ class motorjogo:
         else:
             j.desenhar(tela, cam)
 
+        self._desenhar_aviso(cam)
         for p in m.proj_jogador:
             tela.blit(p.image, p.image.get_rect(center=(p.rect.centerx - cam, p.rect.centery)))
         for p in m.proj_inimigos:
@@ -1278,27 +1427,40 @@ class motorjogo:
 
         self.dialogo.desenhar(tela)
         self._desenhar_banner()
-        self._desenhar_easter_egg()
+        self._desenhar_gnomo()
 
         if self.pausado:
-            escurecer(tela, 170)
-            texto(tela, "PAUSADO", 80, (255, 240, 255), (largura_tela // 2, 190), centro=True)
-            texto(tela, "Esc / Enter: continuar", 34, (230, 220, 245), (largura_tela // 2, 280), centro=True)
-            texto(tela, "M: voltar ao menu", 34, (230, 220, 245), (largura_tela // 2, 320), centro=True)
-            cn = self.controles.nome_acao
-            controles = ["Andar: %s e %s    Pular: %s    Descer da plataforma: %s" % (
-                             cn("esquerda"), cn("direita"), cn("pular"), cn("descer")),
-                         "Atirar (segure): %s    Poder especial: %s" % (cn("atirar"), cn("poder")),
-                         "Falar com a Fada / avançar falas: %s    Pausar: %s ou Esc" % (cn("interagir"), cn("pausar")),
-                         "(para mudar as teclas: menu principal > Opções)"]
-            for i, c in enumerate(controles):
-                texto(tela, c, 26, (200, 190, 220), (largura_tela // 2, 400 + i * 28), centro=True)
+            self._desenhar_menu_pausa()
 
         if self.transicao is not None:
             v = pygame.Surface((largura_tela, altura_tela))
             v.fill((0, 0, 0))
             v.set_alpha(int(max(0, min(255, self.transicao["alpha"]))))
             tela.blit(v, (0, 0))
+
+    def _desenhar_aviso(self, cam):
+        """Quadro pequeno em cima da personagem (poder pronto, energia/vida baixas)."""
+        av = self.aviso_balao
+        j = self.jogador
+        if av is None or j.morta:
+            return
+        f = fonte(24)
+        w = f.size(av["texto"])[0] + 26
+        h = 34
+        restante = self.DURACAO_AVISO - av["t"]
+        alfa = int(255 * min(1.0, restante / 20.0, av["t"] / 8.0 + 0.2))
+        flutua = int(math.sin(self.frames * 0.12) * 2)
+        x = max(8, min(largura_tela - w - 8, j.rect.centerx - int(self.cam_x) - w // 2))
+        y = max(56, j.rect.top - h - 20) + flutua
+        sup = pygame.Surface((w, h + 10), pygame.SRCALPHA)
+        pygame.draw.rect(sup, (30, 15, 55, 235), (0, 0, w, h), border_radius=9)
+        pygame.draw.rect(sup, av["cor"] + (255,), (0, 0, w, h), 3, border_radius=9)
+        cx = max(14, min(w - 14, j.rect.centerx - int(self.cam_x) - x))       # a ponta aponta para a personagem
+        pygame.draw.polygon(sup, (30, 15, 55, 235), [(cx - 8, h - 2), (cx + 8, h - 2), (cx, h + 9)])
+        pygame.draw.lines(sup, av["cor"] + (255,), False, [(cx - 8, h - 1), (cx, h + 9), (cx + 8, h - 1)], 3)
+        sup.blit(f.render(av["texto"], True, (255, 255, 255)), (13, 8))
+        sup.set_alpha(alfa)
+        self.tela.blit(sup, (x, y))
 
     def _desenhar_jogadora_morta(self, cam):
         j = self.jogador
@@ -1324,13 +1486,95 @@ class motorjogo:
             img.set_alpha(int(255 * alfa))
             self.tela.blit(img, img.get_rect(center=(largura_tela // 2, dy)))
 
-    def _desenhar_easter_egg(self):
-        if not self.easter_ativo or not self.gnomos:
+    # ------------------------------------------------------------------ easter egg: o gnomo
+    # Depois da 20ª flor um gnomo passa a espiar do canto inferior direito da tela (sem aviso).
+    # Clicando nele: ele vai para o meio da tela e dança (a música do easter egg só começa aí).
+    # Quando ele some, a música acaba e volta a música da fase. O jogo fica parado durante a dança.
+    GNOMO_ESCALA_CANTO = 0.42
+    GNOMO_IDA = 40                      # frames para ir do canto até o meio
+    GNOMO_DANCA = 60 * 10               # 10 s de dança
+    GNOMO_SAIDA = 30                    # frames para sumir (a música baixa junto)
+
+    def _gnomo_forma(self):
+        """(escala, centro, opacidade) do gnomo no momento atual."""
+        w0, h0 = self.gnomos[0].get_size()
+        e0 = self.GNOMO_ESCALA_CANTO
+        bob = math.sin(self.frames * 0.08) * 2
+        canto = (largura_tela - 90, altura_tela + 50 - h0 * e0 / 2 + bob)      # só a cabeça aparece
+        meio = (largura_tela // 2, altura_tela // 2 - 10)
+        est, t = self.gnomo_estado, self.gnomo_t
+        if est == "escondido":
+            return e0, canto, 255
+        if est == "indo":
+            p = t / float(self.GNOMO_IDA)
+            p = 1 - (1 - p) ** 3                                    # desacelera ao chegar
+            return (e0 + (1.0 - e0) * p, (canto[0] + (meio[0] - canto[0]) * p, canto[1] + (meio[1] - canto[1]) * p), 255)
+        if est == "dancando":
+            return 1.0, (meio[0], meio[1] + math.sin(t * 0.25) * 4), 255
+        p = min(1.0, t / float(self.GNOMO_SAIDA))                   # saindo
+        return 1.0 - 0.7 * p, (meio[0], meio[1] - 40 * p), int(255 * (1 - p))
+
+    def _rect_gnomo(self):
+        e, (cx, cy), _ = self._gnomo_forma()
+        w0, h0 = self.gnomos[0].get_size()
+        r = pygame.Rect(0, 0, int(w0 * e), int(h0 * e))
+        r.center = (int(cx), int(cy))
+        return r
+
+    def _iniciar_gnomo(self):
+        self.gnomo_estado = "indo"
+        self.gnomo_t = 0
+        self.audio.tocar("fada")
+
+    def _atualizar_gnomo(self):
+        self.gnomo_t += 1
+        est = self.gnomo_estado
+        if est == "indo" and self.gnomo_t >= self.GNOMO_IDA:
+            # chegou ao meio: AGORA começa a dançar e a música toca
+            self.gnomo_estado, self.gnomo_t = "dancando", 0
+            # a música da fase fica em PAUSA e a dele toca por cima; se o computador não conseguir
+            # abrir o arquivo desse jeito, troca a música normalmente (e depois recomeça a da fase)
+            self.gnomo_via_trilha = self.audio.iniciar_trilha_extra("easter_egg_musica.mp3")
+            if not self.gnomo_via_trilha:
+                self.musica_antes_egg = self.audio.musica_atual
+                self.audio.musica("easter_egg_musica.mp3", repetir=False)
+        elif est == "dancando":
+            if self.gnomo_via_trilha:
+                musica_acabou = not self.audio.trilha_extra_tocando()
+            else:
+                musica_acabou = (self.audio.ativo and self.audio.musica_atual == "easter_egg_musica.mp3"
+                                 and not self.audio.tocando())
+            if self.gnomo_t >= self.GNOMO_DANCA or musica_acabou:
+                self.gnomo_estado, self.gnomo_t = "saindo", 0
+        elif est == "saindo":
+            fator = 1.0 - self.gnomo_t / float(self.GNOMO_SAIDA)
+            if self.gnomo_via_trilha:
+                self.audio.volume_trilha_extra(fator)
+            else:
+                self.audio.volume_temporario(fator)
+            if self.gnomo_t >= self.GNOMO_SAIDA:
+                # sumiu: a música dele acaba JUNTO e volta a música do momento
+                self.gnomo_estado = "nenhum"
+                self.easter_feito = True
+                if self.gnomo_via_trilha:
+                    self.audio.parar_trilha_extra()          # a da fase continua de onde estava
+                else:
+                    self.audio.parar_musica()
+                    self.audio.musica(self.musica_antes_egg or self.dados["musica"])
+                self.gnomo_via_trilha = False
+
+    def _desenhar_gnomo(self):
+        if self.gnomo_estado == "nenhum" or not self.gnomos:
             return
-        quadro = self.gnomos[(self.frames // 6) % len(self.gnomos)]
-        self.tela.blit(quadro, quadro.get_rect(midbottom=(largura_tela // 2, altura_tela - 6)))
-        texto(self.tela, "Você achou as 20 flores! Os gnomos fazem uma dancinha!", 34, (255, 210, 240),
-              (largura_tela // 2, 110), centro=True)
+        e, centro, alfa = self._gnomo_forma()
+        indice = (self.frames // 10) % len(self.gnomos) if self.gnomo_estado in ("dancando", "indo", "saindo") \
+            else (self.frames // 30) % len(self.gnomos)
+        quadro = self.gnomos[indice]
+        w, h = max(1, int(quadro.get_width() * e)), max(1, int(quadro.get_height() * e))
+        img = pygame.transform.scale(quadro, (w, h))
+        if alfa < 255:
+            img.set_alpha(alfa)
+        self.tela.blit(img, img.get_rect(center=(int(centro[0]), int(centro[1]))))
 
     # ================================================================== DERROTA
     def estado_derrota(self, eventos):
@@ -1382,10 +1626,10 @@ class motorjogo:
     def estado_creditos(self, eventos):
         for ev in eventos:
             if ev.type == pygame.KEYDOWN and ev.key in (pygame.K_RETURN, pygame.K_ESCAPE, pygame.K_SPACE):
-                self.entrar_estado("menu")
+                self._fim_dos_creditos()
                 return
         linhas = [("THE TALE OF AN AMETHYST", 60, (255, 235, 140)), ("", 30, None),
-                  ("Obrigada por jogar!", 38, (255, 255, 255)), ("", 30, None)]
+                  ("Obrigada por jogarem!", 38, (255, 255, 255)), ("", 30, None)]
         if self.pontos_finais is not None:
             linhas += [("Pontuação final: %d" % self.pontos_finais, 36, (255, 225, 160)), ("", 30, None)]
         linhas += [("Arte, roteiro e programação", 34, (225, 170, 255)),
@@ -1403,4 +1647,41 @@ class motorjogo:
                 texto(self.tela, txt, tam, cor, (largura_tela // 2, int(y)), centro=True)
             y += tam + 12
         if y < 0:
+            self._fim_dos_creditos()
+
+    def _fim_dos_creditos(self):
+        """Créditos vindos do fim do jogo terminam na tela 'Obrigada por jogarem!'."""
+        if self.pontos_finais is not None:
+            self.entrar_estado("fim")
+        else:
             self.entrar_estado("menu")
+
+    # ================================================================== TELA FINAL
+    def estado_fim(self, eventos):
+        for ev in eventos:
+            if (ev.type == pygame.KEYDOWN and ev.key in (pygame.K_RETURN, pygame.K_ESCAPE, pygame.K_SPACE)) \
+                    or (ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1):
+                self.pontos_finais = None
+                self.audio.tocar("ui_voltar")
+                self.entrar_estado("menu")
+                return
+        self.fim_t += 1
+        if self.painel is not None:
+            self.tela.blit(self.painel, (0, 0))
+        else:
+            self.tela.fill((95, 53, 165))
+        m = self.miolo
+        anim = self.animacao_final
+        if anim:
+            # espaço da animação das personagens (quando estiver pronta)
+            quadro = rec.escalado(anim[(self.frames // 8) % len(anim)], 190, True)
+            self.tela.blit(quadro, quadro.get_rect(center=(m.centerx, m.top + 100)))
+            y_msg = m.top + 215
+        else:
+            y_msg = m.centery - 14
+        bob = int(math.sin(self.fim_t * 0.04) * 4)
+        texto(self.tela, "Obrigada por jogarem!", 68, (255, 240, 255), (m.centerx, y_msg + bob), centro=True)
+        texto(self.tela, "The Tale of an Amethyst", 32, (226, 180, 255), (m.centerx, y_msg + 58), centro=True)
+        texto(self.tela, "Enter ou clique: voltar ao menu", 24, (232, 220, 250),
+              (largura_tela // 2, altura_tela - 40), centro=True)
+        escurecer(self.tela, max(0, 255 - self.fim_t * 4))         # surge com um fade suave

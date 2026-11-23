@@ -4,7 +4,8 @@ import recursos as rec
 from fisica import mover_corpo
 from projeteis import projetil
 from configuracoes import (
-    gravidade, cores_princesa, vida_maxima, estrelas_maximas, estrelas_iniciais, custo_poder
+    gravidade, cores_princesa, vida_maxima, estrelas_maximas, estrelas_iniciais, custo_poder,
+    sapo_forca_pulo, sapo_gravidade, sapo_queda_max, sapo_velocidade,
 )
 
 TAM_HUMANO = (36, 80)     # hitbox em pé
@@ -133,7 +134,7 @@ class jogador(pygame.sprite.Sprite):
         descer = c.tecla("descer", teclas)
         self.atravessar = bool(descer)
 
-        vel = 4.2 if self.eh_sapinho else self.velocidade
+        vel = sapo_velocidade if self.eh_sapinho else self.velocidade
         self.vx = 0.0
         if esquerda and not direita:
             self.vx = -vel
@@ -153,7 +154,10 @@ class jogador(pygame.sprite.Sprite):
                 mundo.emitir(self.rect.centerx + self.face * -8, self.rect.bottom - 4,
                              (255, 190, 225), n=1, vel=0.8, vida=22, raio=2)
         else:
-            self.vy = min(15.0, self.vy + gravidade)
+            if self.eh_sapinho:
+                self.vy = min(sapo_queda_max, self.vy + sapo_gravidade)
+            else:
+                self.vy = min(15.0, self.vy + gravidade)
 
         # pulo com "coyote time" e buffer (mais perdoador)
         if self.no_chao:
@@ -162,14 +166,15 @@ class jogador(pygame.sprite.Sprite):
             self.coyote -= 1
         self.buffer_pulo = 7 if pular else max(0, self.buffer_pulo - 1)
         if not flutuando and self.buffer_pulo > 0 and self.coyote > 0:
-            self.vy = -10.5 if self.eh_sapinho else self.forca_pulo
+            self.vy = sapo_forca_pulo if self.eh_sapinho else self.forca_pulo
             self.coyote = 0
             self.buffer_pulo = 0
             self.no_chao = False
             mundo.audio.tocar("pulo_sapo" if self.eh_sapinho else "pulo")
         # soltou o botão cedo = pulo mais baixo
-        if not pular and self.vy < -4.5 and not flutuando:
-            self.vy = -4.5
+        corte = -7.0 if self.eh_sapinho else -4.5
+        if not pular and self.vy < corte and not flutuando:
+            self.vy = corte
 
         # duração dos poderes
         if self.special_active:

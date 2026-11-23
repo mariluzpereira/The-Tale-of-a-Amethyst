@@ -135,7 +135,7 @@ FADA_TUTORIAL = [
               "energia do seu poder; e a Flor... dizem que quem reúne 20 delas descobre um segredo dos gnomos. "
               "Itens soltos pelos inimigos somem rápido!"),
     ("inimigos", "Cuidado com o caminho: as Plantas mordem quando você chega perto; as Bruxas jogam poções que "
-                 "transformam em sapinho por 10 segundos, e sapinhos não conseguem atacar; as Vespas perseguem sem parar."),
+                 "transformam em sapinho por 10 segundos: sapinhos não atacam, mas correm e pulam mais alto que qualquer princesa; as Vespas perseguem sem parar."),
     ("objetivo", "Em cada região, derrote todos os inimigos e siga para a direita para avançar. Use {pausar} ou Esc "
                  "para pausar e {interagir} para falar comigo quando precisarem de ajuda. Boa sorte!"),
 ]

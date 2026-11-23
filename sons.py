@@ -37,6 +37,8 @@ class Audio:
         self.sfx = {}
         self.vozes = {}
         self._ultimo = {}
+        self._extra = None              # trilha curta tocada POR CIMA (música pausada)
+        self._canal_extra = None
         self.taxa = 44100
         try:
             if not pygame.mixer.get_init():
@@ -152,6 +154,7 @@ class Audio:
             "estrela": lambda: seq([880, 1180, 1480], 0.05, 0.28, "seno"),
             "flor": lambda: seq([660, 990], 0.06, 0.28, "seno"),
             "item_surge": lambda: o(500, 900, 0.10, 0.18, "seno"),
+            "gnomo_aparece": lambda: o(900, 620, 0.12, 0.07, "seno", ruido=0.6),   # farfalhar baixinho
             "easter_egg": lambda: seq([523, 659, 784, 659, 784, 1047], 0.09, 0.30, "seno"),
             # --- inimigos
             "pocao_lancada": lambda: o(300, 520, 0.18, 0.22, "seno"),
@@ -262,6 +265,48 @@ class Audio:
         if self.ativo:
             pygame.mixer.music.stop()
         self.musica_atual = None
+
+    # ---- trilha extra: toca um arquivo por cima enquanto a música da fase fica em pausa
+    # e continua exatamente de onde parou quando a trilha extra termina (easter egg do gnomo).
+    def iniciar_trilha_extra(self, arquivo):
+        """Devolve True se conseguiu. Se não der (arquivo/codec), o chamador usa musica()."""
+        if not self.ativo:
+            return False
+        caminho = achar(arquivo)
+        if not caminho:
+            return False
+        try:
+            som = pygame.mixer.Sound(caminho)
+        except pygame.error:
+            return False
+        pygame.mixer.music.pause()
+        self._extra = som
+        som.set_volume(self.volume_musica)
+        self._canal_extra = som.play()
+        return True
+
+    def trilha_extra_tocando(self):
+        return bool(self._canal_extra is not None and self._canal_extra.get_busy())
+
+    def volume_trilha_extra(self, fator):
+        if self._extra is not None:
+            self._extra.set_volume(self.volume_musica * max(0.0, min(1.0, fator)))
+
+    def parar_trilha_extra(self):
+        """Para a trilha extra e retoma a música pausada de onde estava."""
+        if self._extra is None:
+            return
+        self._extra.stop()
+        self._extra = None
+        self._canal_extra = None
+        if self.ativo:
+            pygame.mixer.music.unpause()
+
+    def volume_temporario(self, fator):
+        """Baixa/sobe o volume da música sem mexer na configuração (usado para sumir aos poucos).
+        Não trava o jogo, ao contrário de mixer.music.fadeout()."""
+        if self.ativo:
+            pygame.mixer.music.set_volume(self.volume_musica * max(0.0, min(1.0, fator)))
 
     def definir_volume_musica(self, v):
         self.volume_musica = max(0.0, min(1.0, v))
