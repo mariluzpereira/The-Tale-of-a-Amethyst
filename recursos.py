@@ -152,6 +152,40 @@ def _centro_de_massa_x(img):
         return img.get_width() / 2.0
 
 
+correcoes_orientacao = []        # sprites que estavam viradas para o lado errado e foram espelhadas
+
+
+def _olha_para_direita(surf):
+    """Para onde a sprite olha? Usa os OLHOS (pixels brancos): se estão à direita do centro do
+    corpo, olha para a direita. Devolve None se não der para saber."""
+    try:
+        brancos = pygame.mask.from_threshold(surf, (255, 255, 255, 255), (30, 30, 30, 100))
+        if brancos.count() == 0:
+            return None
+        caixa = surf.get_bounding_rect(100)
+        return brancos.centroid()[0] > caixa.x + caixa.width / 2.0
+    except Exception:
+        return None
+
+
+def _orientar(surf, deve_olhar_direita, nome):
+    """Espelha a sprite se ela olhar para o lado contrário ao que o nome do arquivo diz."""
+    atual = _olha_para_direita(surf)
+    if atual is not None and atual != deve_olhar_direita:
+        correcoes_orientacao.append(nome)
+        return espelhar(surf)
+    return surf
+
+
+def imagem_alternativas(*nomes):
+    """Primeira imagem que existir (ex.: 'fadinha (2).png' e depois 'fadinha.png')."""
+    for n in nomes:
+        im = imagem(n)
+        if im is not None:
+            return im
+    return None
+
+
 def _quadros_de_caminhada(quadros, altura_alvo=88):
     """Devolve (quadros prontos, fator de escala usado)."""
     alturas = [max(1, q.get_bounding_rect(100).height) for q in quadros]
@@ -205,11 +239,20 @@ def sprites_princesa(tipo):
         pacote["pulo_dir"] = (img, ax)
         pacote["pulo_esq"] = (espelhar(img), img.get_width() - ax)
 
-    # sapinho (transformação da poção)
+    # sapinho (transformação da poção). Cada sprite é conferida: se estiver virada para o lado
+    # contrário ao do nome do arquivo (acontece quando a arte sai espelhada), o jogo espelha sozinho.
     for lado in ("direita", "esquerda"):
         sufixo = "dir" if lado == "direita" else "esq"
-        quadros = carregar_quadros(nome + "_sapo_" + lado + "({})", 3)
-        pulo = imagem(nome + "_sapo_pulo_" + lado + ".png")
+        olha_dir = lado == "direita"
+        quadros = []
+        for i in (1, 2, 3):
+            nome_arq = "%s_sapo_%s(%d).png" % (nome, lado, i)
+            im = imagem(nome_arq)
+            if im is not None:
+                quadros.append(_orientar(im, olha_dir, nome_arq))
+        nome_pulo = "%s_sapo_pulo_%s.png" % (nome, lado)
+        pulo_img = imagem(nome_pulo)
+        pulo = _orientar(pulo_img, olha_dir, nome_pulo) if pulo_img is not None else None
         todos = quadros + ([pulo] if pulo is not None else [])
         if todos:
             todos = [escalar_altura(q, 40) for q in uniao_recorte(todos)]
@@ -218,6 +261,22 @@ def sprites_princesa(tipo):
         morto = imagem(nome + "_sapo_morto_" + lado + ".png")
         if morto is not None:
             pacote["sapo_morto_" + sufixo] = escalar_altura(recortar(morto), 110)
+
+    # princesa atingida (um quadro por lado, com as exclamações): todas ajustadas para a mesma altura
+    for lado in ("direita", "esquerda"):
+        sufixo = "dir" if lado == "direita" else "esq"
+        im = imagem("%s_atingida_%s(1).png" % (nome, lado))
+        if im is not None:
+            c = recortar_visivel(im)
+            img = pygame.transform.scale(c, (max(1, int(c.get_width() * 92.0 / c.get_height())), 92))
+            pacote["atingida_" + sufixo] = (img, _centro_de_massa_x(img))
+
+    # princesa derrotada (deitada): versão pequena para o jogo e grande para a tela de Game Over
+    der = imagem(nome + "_derrotada(1).png")
+    if der is not None:
+        c = recortar_visivel(der)
+        pacote["derrotada"] = escalar_largura(c, 150)
+        pacote["derrotada_grande"] = escalar_largura(c, 420)
 
     # ataque básico (projétil animado, aponta para a ESQUERDA no arquivo)
     poder = carregar_quadros(arquivo_poder[tipo] + "({})", 6)
@@ -342,7 +401,7 @@ def quadro_de_superficie(surf, ancora="pes"):
 def _lista_essencial():
     imagens = ["menu.png", "jogar.png", "opcoes.png", "creditos.png",
                "maca.png", "Flor.png", "poção.png", "plataforma(1).png", "Plataforma (2).png",
-               "Escudo (2).png", "fadinha.png", "dialogo.png",
+               "Escudo (2).png", "dialogo.png",
                "flor_rosa_selecao.png", "flor_vermelha_selecao.png",
                "flor_azul_selecao.png", "flor_roxa_selecao.png", "sair.png",
                "bruxa_sprite_voando(1).png", "bruxa_sprite_atingida(1).png", "bruxa_sprite_morta(1).png",
@@ -360,9 +419,11 @@ def _lista_essencial():
         imagens += ["%s_sapo_%s(%d).png" % (nome, lado, i) for lado in ("direita", "esquerda") for i in (1, 2, 3)]
         imagens += ["%s_sapo_pulo_%s.png" % (nome, lado) for lado in ("direita", "esquerda")]
         imagens.append("%s_pulo.png" % nome)
+        imagens += ["%s_atingida_%s(1).png" % (nome, lado) for lado in ("direita", "esquerda")]
+        imagens.append("%s_derrotada(1).png" % nome)
         imagens += ["%s_sapo_morto_%s.png" % (nome, lado) for lado in ("direita", "esquerda")]
         imagens += ["%s(%d).png" % (arquivo_poder[tipo], i) for i in range(1, 7)]
-    opacas = ["casa_fada.jpg", "cenário_caminho_floresta.jpg", "cenario_boss.jpg", "cenario_prologo.jpg"]
+    opacas = ["casa_fada.jpg", "cenário_caminho_floresta.jpg", "cenario_boss.jpg"]
     audio = ["menu.mp3", "selecao_personagem.mp3", "prologo.ogg", "combate.mp3", "boss.mp3",
              "vitoria.wav", "derrota.mp3", "creditos.mp3", "easter_egg_musica.mp3"]
     return imagens, opacas, audio
@@ -375,6 +436,11 @@ def verificar_recursos():
     faltam_img = [n for n in imagens if imagem(n) is None]
     faltam_img += [n for n in opacas if imagem_opaca(n) is None]
     faltam_audio = [n for n in audio if achar(n) is None]
+    if imagem_alternativas("fadinha (2).png", "fadinha.png") is None:
+        faltam_img.append("fadinha (2).png")
+    if imagem_opaca("cenario_prologo.jpg") is None:
+        # opcional: sem ele o prólogo usa o cenário da casa da fada
+        print("[recursos] aviso: cenario_prologo.jpg não encontrado - o prólogo usará a casa da fada como fundo")
     # retratos dos diálogos: serve a versão leve (extras/) ou a original grande
     faltam_rostos = []
     for nome in list(nomes_arquivo.values()) + ["bruxa", "fadinha"]:
@@ -396,6 +462,9 @@ def verificar_recursos():
         linhas.append("%s: %d" % (titulo, len(lista)))
         linhas += ["  - " + n for n in lista]
         linhas.append("")
+    linhas.append("SPRITES ESPELHADAS AUTOMATICAMENTE (olhavam para o lado errado): %d" % len(correcoes_orientacao))
+    linhas += ["  - " + n for n in correcoes_orientacao]
+    linhas.append("")
     linhas.append("IMAGENS QUE EXISTEM MAS NÃO ABRIRAM: %d" % len(erros_carga))
     linhas += ["  - %s -> %s" % (n, e) for n, e in erros_carga]
     texto = "\n".join(linhas) + "\n"

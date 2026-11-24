@@ -83,7 +83,7 @@ class fada(pygame.sprite.Sprite):
 
     def __init__(self, x, y):
         super().__init__()
-        base = rec.imagem("fadinha.png")
+        base = rec.imagem_alternativas("fadinha (2).png", "fadinha.png")
         if base is not None:
             self.image = rec.escalar_altura(rec.recortar(base), 76, suave=True)
         else:

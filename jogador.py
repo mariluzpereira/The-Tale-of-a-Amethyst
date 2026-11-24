@@ -37,6 +37,8 @@ class jogador(pygame.sprite.Sprite):
         self.tempo_anim = 0
         self.movendo = False
         self.frames_no_ar = 0
+        self.tempo_atingida = 0        # frames mostrando a pose de 'atingida' depois de levar dano
+        self._furacao = None
 
         # status
         self.coracoes_maximos = vida_maxima
@@ -74,6 +76,7 @@ class jogador(pygame.sprite.Sprite):
         self.tempo_especial = 0
         self.cooldown_timer = 0
         self.tempo_invulnerabilidade = 60
+        self.tempo_atingida = 0
 
     def restaurar_para_nova_tentativa(self):
         self.hearts = self.coracoes_maximos
@@ -119,6 +122,8 @@ class jogador(pygame.sprite.Sprite):
             self.cooldown_timer -= 1
         if self.recarga_tiro > 0:
             self.recarga_tiro -= 1
+        if self.tempo_atingida > 0:
+            self.tempo_atingida -= 1
 
         if self.eh_sapinho:
             self.tempo_sapinho -= 1
@@ -246,6 +251,7 @@ class jogador(pygame.sprite.Sprite):
             return False
         self.hearts -= forca
         self.tempo_invulnerabilidade = 90
+        self.tempo_atingida = 36
         if origem_x is not None:
             self.empurrao = 9.0 if self.rect.centerx >= origem_x else -9.0
         self.vy = -6.0
@@ -288,6 +294,10 @@ class jogador(pygame.sprite.Sprite):
                 return self.sprites.get("sapo_pulo_" + lado, quadros[0])
             return quadros[(self.tempo_anim // 8) % len(quadros)] if self.movendo else quadros[0]
         quadros = self.sprites["andar_" + lado]
+        if self.tempo_atingida > 0:
+            atingida = self.sprites.get("atingida_" + lado)      # (imagem, x do corpo)
+            if atingida is not None:
+                return atingida
         if not self.no_chao:
             pulo = self.sprites.get("pulo_" + lado)      # (imagem, x do corpo)
             if pulo is not None:
@@ -296,11 +306,11 @@ class jogador(pygame.sprite.Sprite):
         if self.movendo:
             sequencia = [0, 1, 2, 1]
             return quadros[sequencia[(self.tempo_anim // 7) % 4] % len(quadros)]
-        return quadros[0]
+        return quadros[1 % len(quadros)]            # parada: usa o quadro movimentacao(2)
 
     def desenhar(self, tela, cam_x):
         # pisca quando está invulnerável
-        if self.tempo_invulnerabilidade > 0 and (self.tempo_invulnerabilidade // 4) % 2 == 0:
+        if self.tempo_atingida <= 0 and self.tempo_invulnerabilidade > 0 and (self.tempo_invulnerabilidade // 4) % 2 == 0:
             visivel = False
         else:
             visivel = True
@@ -318,6 +328,18 @@ class jogador(pygame.sprite.Sprite):
                 pygame.draw.rect(tela, self.color, r)
 
         self._desenhar_efeitos(tela, cam_x)
+
+    def _quadros_furacao(self):
+        """Sprites do furacão (furacão_sprite(1..3).png), cortadas iguais e levemente transparentes."""
+        if self._furacao is None:
+            brutos = rec.carregar_quadros("furacão_sprite({})", 3)
+            self._furacao = []
+            if brutos:
+                for q in rec.uniao_recorte(brutos):
+                    img = rec.escalar_altura(q, 170, suave=True)
+                    img.set_alpha(215)
+                    self._furacao.append(img)
+        return self._furacao
 
     def _desenhar_efeitos(self, tela, cam_x):
         if not self.special_active or self.eh_sapinho:
@@ -341,6 +363,11 @@ class jogador(pygame.sprite.Sprite):
             copia = img.copy()
             copia.set_alpha(alfa)
             tela.blit(copia, copia.get_rect(center=(cx + self.face * 30, cy)))
+
+        elif self.tipo_personagem == "Louise" and self._quadros_furacao():
+            quadros = self._quadros_furacao()
+            img = quadros[(t // 4) % len(quadros)]
+            tela.blit(img, img.get_rect(midbottom=(cx, self.rect.bottom + 8)))
 
         elif self.tipo_personagem == "Louise":
             sup = pygame.Surface((220, 130), pygame.SRCALPHA)

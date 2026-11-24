@@ -126,6 +126,7 @@ class motorjogo:
         self.gnomo_via_trilha = False      # True: música do gnomo toca por cima e a da fase só pausa
         self.opcoes_volta = "menu"       # de onde as Opções foram abertas: "menu" ou "pausa"
         self.pausa_sel = 0
+        self.morreu_sapo = False
         self.aviso_balao = None          # quadro pequeno de aviso sobre a personagem
         self._poder_pronto_antes = True
         self._vida_baixa_antes = False
@@ -748,14 +749,15 @@ class motorjogo:
         # a princesa escolhida, à esquerda, olhando para a Fada
         sprites = rec.sprites_princesa(self.escolhido)
         if sprites:
-            base = sprites["andar_dir"][0]
+            quadros = sprites["andar_dir"]
+            base = quadros[1 % len(quadros)]                # parada: quadro movimentacao_direita(2)
             img = rec.escalado(base, base.get_height() * 2, False)
-            tela.blit(img, img.get_rect(midbottom=(200, 538)))
-        # a Fada, à direita, flutuando
+            tela.blit(img, img.get_rect(midbottom=(380, 538)))
+        # a Fada, pequena, flutuando bem perto da casa (a porta redonda fica em ~ x=680, y=470)
         fada_img = self._img_fada_grande()
         if fada_img is not None:
-            bob = int(math.sin(self.frames * 0.05) * 10)
-            tela.blit(fada_img, fada_img.get_rect(center=(770, 440 + bob)))
+            bob = int(math.sin(self.frames * 0.05) * 6)
+            tela.blit(fada_img, fada_img.get_rect(center=(690, 372 + bob)))
 
         if painel != "nenhum":
             self._desenhar_painel_fada(painel)
@@ -775,12 +777,11 @@ class motorjogo:
 
     def _img_fada_grande(self):
         if not hasattr(self, "_fada_grande"):
-            base = rec.imagem("fadinha.png")
+            base = rec.imagem_alternativas("fadinha (2).png", "fadinha.png")
             if base is None:
                 self._fada_grande = None
             else:
-                img = rec.escalar_altura(rec.recortar(base), 190, suave=True)
-                self._fada_grande = rec.espelhar(img)       # a sprite olha p/ a direita; aqui olha p/ a esquerda
+                self._fada_grande = rec.escalar_altura(rec.recortar(base), 110, suave=True)   # menor (era 190)
         return self._fada_grande
 
     # ---- painéis ilustrados da conversa
@@ -1176,6 +1177,7 @@ class motorjogo:
         # ---- morte da jogadora
         if j.morta:
             if self.morte_timer == 0:
+                self.morreu_sapo = j.eh_sapinho
                 self.audio.parar_musica()
                 self.audio.tocar("dano")
                 m.emitir(j.rect.centerx, j.rect.centery, (255, 120, 160), n=30, vel=5, vida=40)
@@ -1462,11 +1464,22 @@ class motorjogo:
         sup.set_alpha(alfa)
         self.tela.blit(sup, (x, y))
 
+    def _sprite_derrotada(self, grande=False):
+        """Sprite da princesa derrotada (deitada) ou do sapinho morto, se ela morreu como sapo."""
+        j = self.jogador
+        if not j or not j.sprites:
+            return None
+        if getattr(self, "morreu_sapo", False):
+            return j.sprites.get("sapo_morto_dir" if j.face > 0 else "sapo_morto_esq")
+        img = j.sprites.get("derrotada_grande" if grande else "derrotada")
+        if img is None:
+            return j.sprites.get("sapo_morto_dir" if j.face > 0 else "sapo_morto_esq")
+        # o desenho original tem a cabeça à esquerda (caiu para trás); espelha se olhava para a esquerda
+        return img if j.face > 0 else rec.espelhar(img)
+
     def _desenhar_jogadora_morta(self, cam):
         j = self.jogador
-        img = None
-        if j.sprites:
-            img = j.sprites.get("sapo_morto_dir" if j.face > 0 else "sapo_morto_esq")
+        img = self._sprite_derrotada()
         r = j.rect.move(-cam, 0)
         if img is not None:
             self.tela.blit(img, img.get_rect(midbottom=(r.centerx, r.bottom + 4)))
@@ -1588,11 +1601,11 @@ class motorjogo:
                     self.entrar_estado("menu")
                     return
         self.tela.fill((15, 8, 25))
-        j = self.jogador
-        img = j.sprites.get("sapo_morto_dir") if j and j.sprites else None
+        img = self._sprite_derrotada(grande=True)
         if img is not None:
-            img = rec.escalar_altura(img, 200)
-            self.tela.blit(img, img.get_rect(center=(largura_tela // 2, 190)))
+            if getattr(self, "morreu_sapo", False):
+                img = rec.escalar_altura(img, 200)
+            self.tela.blit(img, img.get_rect(center=(largura_tela // 2, 200)))
         texto(self.tela, "Game Over", 90, (255, 130, 150), (largura_tela // 2, 340), centro=True)
         texto(self.tela, "A Ametista ainda precisa de você...", 34, (230, 215, 245), (largura_tela // 2, 400), centro=True)
         texto(self.tela, "Enter: tentar a fase de novo      Esc: menu", 32, (255, 240, 170),
@@ -1672,16 +1685,23 @@ class motorjogo:
             self.tela.fill((95, 53, 165))
         m = self.miolo
         anim = self.animacao_final
+        bob = int(math.sin(self.fim_t * 0.04) * 3)
         if anim:
-            # espaço da animação das personagens (quando estiver pronta)
-            quadro = rec.escalado(anim[(self.frames // 8) % len(anim)], 190, True)
-            self.tela.blit(quadro, quadro.get_rect(center=(m.centerx, m.top + 100)))
-            y_msg = m.top + 215
+            # animação final das princesas (animacao_final(1..N).png) numa moldura, e a mensagem ao lado
+            quadro = rec.escalado(anim[(self.frames // 9) % len(anim)], 262, True)
+            ret = quadro.get_rect(midleft=(m.left + 30, m.centery))
+            moldura = ret.inflate(14, 14)
+            pygame.draw.rect(self.tela, (255, 240, 255), moldura, border_radius=8)
+            pygame.draw.rect(self.tela, (120, 80, 170), moldura, 4, border_radius=8)
+            self.tela.blit(quadro, ret)
+            x_msg = (moldura.right + m.right) // 2
+            texto(self.tela, "Obrigada", 64, (255, 240, 255), (x_msg, m.centery - 52 + bob), centro=True)
+            texto(self.tela, "por jogarem!", 64, (255, 240, 255), (x_msg, m.centery + 12 + bob), centro=True)
+            texto(self.tela, "The Tale of an Amethyst", 28, (226, 180, 255), (x_msg, m.centery + 66), centro=True)
         else:
             y_msg = m.centery - 14
-        bob = int(math.sin(self.fim_t * 0.04) * 4)
-        texto(self.tela, "Obrigada por jogarem!", 68, (255, 240, 255), (m.centerx, y_msg + bob), centro=True)
-        texto(self.tela, "The Tale of an Amethyst", 32, (226, 180, 255), (m.centerx, y_msg + 58), centro=True)
+            texto(self.tela, "Obrigada por jogarem!", 68, (255, 240, 255), (m.centerx, y_msg + bob), centro=True)
+            texto(self.tela, "The Tale of an Amethyst", 32, (226, 180, 255), (m.centerx, y_msg + 58), centro=True)
         texto(self.tela, "Enter ou clique: voltar ao menu", 24, (232, 220, 250),
               (largura_tela // 2, altura_tela - 40), centro=True)
         escurecer(self.tela, max(0, 255 - self.fim_t * 4))         # surge com um fade suave
