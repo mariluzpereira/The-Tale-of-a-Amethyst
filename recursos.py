@@ -3,6 +3,7 @@
 Tudo aqui é tolerante: se um arquivo não existir, a função devolve None
 (ou lista vazia) e o resto do jogo usa um desenho de reserva.
 """
+import math
 import os
 import re
 import unicodedata
@@ -301,7 +302,8 @@ def rosto(nome_personagem):
         if grande is not None:
             im = escalar_altura(recortar(grande), 300, suave=True)
             _salvar_extra("extras/rosto_%s.png" % nome, im)
-            _cache.pop(("img", grande), None)
+            _cache.pop("%s_sprite_dialogo(1).png" % nome, None)        # libera a imagem gigante da memória
+            _cache.pop("%s_sprite_diálogo(1).png" % nome, None)
     _cache[chave] = im
     return im
 
@@ -506,3 +508,85 @@ def preparar_retratos(progresso=None):
         rosto(next((k for k, v in nomes_arquivo.items() if v == n), n))
         if progresso:
             progresso((i + 1) / float(len(nomes)))
+
+
+# ------------------------------------------------------------------ versões leves geradas sozinhas
+def extra_gerado(nome_extra, original, largura=None, altura=None):
+    """Versão leve de uma imagem gigante (7000x7000): lê de extras/ ou, se não existir,
+    gera a partir do original e guarda em extras/ para as próximas vezes."""
+    im = imagem(nome_extra)
+    if im is None:
+        grande = imagem(original)
+        if grande is not None:
+            c = recortar_visivel(grande)
+            im = escalar_largura(c, largura, True) if largura else escalar_altura(c, altura, True)
+            _salvar_extra(nome_extra, im)
+            _cache.pop(original, None)                    # libera a imagem gigante da memória
+    return im
+
+
+def _relogio_desenhado():
+    """Relógio feito por código (último recurso, se a imagem do relógio não puder ser aberta)."""
+    s = pygame.Surface((256, 256), pygame.SRCALPHA)
+    pygame.draw.circle(s, (120, 80, 190, 255), (128, 128), 122)
+    pygame.draw.circle(s, (248, 240, 255, 255), (128, 128), 110)
+    for k in range(12):
+        ang = k * math.pi / 6
+        pygame.draw.line(s, (90, 50, 150, 255), (128 + math.sin(ang) * 92, 128 - math.cos(ang) * 92),
+                         (128 + math.sin(ang) * 106, 128 - math.cos(ang) * 106), 6)
+    pygame.draw.line(s, (60, 30, 110, 255), (128, 128), (128, 52), 9)
+    pygame.draw.line(s, (60, 30, 110, 255), (128, 128), (182, 150), 7)
+    pygame.draw.circle(s, (60, 30, 110, 255), (128, 128), 10)
+    return s
+
+
+def relogio_congelar():
+    """Sprite do relógio do poder da Meliah (sempre devolve algo para desenhar)."""
+    if "relogio_congelar" not in _cache:
+        im = extra_gerado("extras/relogio_congelar.png", "habilidade_congelar_tempo_relogio(1).png", largura=256)
+        _cache["relogio_congelar"] = im if im is not None else _relogio_desenhado()
+    return _cache["relogio_congelar"]
+
+
+def ametista_pequena():
+    if "ametista_pequena" not in _cache:
+        _cache["ametista_pequena"] = extra_gerado("extras/ametista_pequena.png", "ametista(1).png", altura=300)
+    return _cache["ametista_pequena"]
+
+
+def _surface_de_bytes(dados, tamanho):
+    criar = getattr(pygame.image, "frombytes", None) or pygame.image.fromstring
+    return criar(dados, tamanho, "RGBA").convert_alpha()
+
+
+def quadros_gnomo():
+    """Quadros da dança do gnomo. Lê extras/gnomo_NN.png; se não existirem, extrai do
+    gnomo_easter_egg.gif (precisa do Pillow: pip install pillow) e guarda em extras/.
+    Sem Pillow usa só o primeiro quadro do GIF (o gnomo aparece, dançando em pulinhos)."""
+    if "gnomo" in _cache:
+        return _cache["gnomo"]
+    quadros = []
+    for i in range(1, 60):
+        im = imagem("extras/gnomo_%02d.png" % i)
+        if im is None:
+            break
+        quadros.append(im)
+    if not quadros:
+        caminho = achar("gnomo_easter_egg.gif")
+        if caminho:
+            try:
+                from PIL import Image, ImageSequence
+                for i, fr in enumerate(ImageSequence.Iterator(Image.open(caminho))):
+                    rgba = fr.convert("RGBA")
+                    surf = _surface_de_bytes(rgba.tobytes(), rgba.size)
+                    quadros.append(surf)
+                    _salvar_extra("extras/gnomo_%02d.png" % (i + 1), surf)
+            except Exception:
+                quadros = []
+            if not quadros:
+                try:
+                    quadros = [pygame.image.load(caminho).convert_alpha()]
+                except pygame.error:
+                    quadros = []
+    _cache["gnomo"] = quadros
+    return quadros

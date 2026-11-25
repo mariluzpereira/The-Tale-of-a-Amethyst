@@ -189,14 +189,10 @@ class motorjogo:
         pro = rec.imagem_opaca("cenario_prologo.jpg")
         self.bg_prologo = cobrir(pro, largura_tela, altura_tela) if pro is not None else None
 
-        amet = rec.imagem("extras/ametista_pequena.png")
-        if amet is None:
-            grande = rec.imagem("ametista(1).png")
-            amet = rec.escalar_altura(rec.recortar(grande), 300, suave=True) if grande is not None else None
-        self.ametista = amet
-
-        rel = rec.imagem("extras/relogio_congelar.png")
-        self.relogio_img = rec.escalar_largura(rel, 150, suave=True) if rel is not None else None
+        # versões leves das imagens gigantes: se a pasta extras/ não existir, são geradas agora
+        # (uma vez só) e guardadas para as próximas aberturas do jogo
+        self.ametista = rec.ametista_pequena()
+        self.relogio_img = rec.escalar_largura(rec.relogio_congelar(), 190, suave=True)
 
         # guirlandas de flores de cada princesa (tela de seleção)
         self.guirlandas = {}
@@ -205,12 +201,7 @@ class motorjogo:
             im = rec.imagem(arq)
             self.guirlandas[tipo] = rec.escalar_largura(im, 232, suave=True) if im is not None else None
 
-        self.gnomos = []
-        for i in range(1, 40):
-            im = rec.imagem("extras/gnomo_%02d.png" % i)
-            if im is None:
-                break
-            self.gnomos.append(im)
+        self.gnomos = rec.quadros_gnomo()
 
     # ------------------------------------------------------------------ estados
     def entrar_estado(self, nome):
@@ -1393,13 +1384,12 @@ class motorjogo:
             if not hasattr(self, "_veu_meliah"):
                 self._veu_meliah = pygame.Surface((largura_tela, altura_tela), pygame.SRCALPHA)
                 self._veu_meliah.fill((120, 90, 200, 55))
-                if self.relogio_img is not None:
-                    self._relogio_transp = self.relogio_img.copy()
-                    self._relogio_transp.set_alpha(150)
+                self._relogio_transp = self.relogio_img.copy()
             tela.blit(self._veu_meliah, (0, 0))
-            if self.relogio_img is not None:
-                r = self._relogio_transp
-                tela.blit(r, r.get_rect(midtop=(largura_tela // 2, 70)))
+            # o relógio surge e some suavemente (alfa depende do tempo restante do poder)
+            self._relogio_transp.set_alpha(int(min(215, j.tempo_especial * 8, (180 - j.tempo_especial) * 8 + 40)))
+            r = self._relogio_transp
+            tela.blit(r, r.get_rect(midtop=(largura_tela // 2, 70)))
 
         # HUD
         vivos = [e for e in m.inimigos if e.morrendo == 0]
@@ -1587,7 +1577,10 @@ class motorjogo:
         img = pygame.transform.scale(quadro, (w, h))
         if alfa < 255:
             img.set_alpha(alfa)
-        self.tela.blit(img, img.get_rect(center=(int(centro[0]), int(centro[1]))))
+        cx, cy = int(centro[0]), int(centro[1])
+        if len(self.gnomos) == 1 and self.gnomo_estado == "dancando":
+            cy -= int(abs(math.sin(self.frames * 0.18)) * 18)       # só 1 quadro (sem Pillow): dança em pulinhos
+        self.tela.blit(img, img.get_rect(center=(cx, cy)))
 
     # ================================================================== DERROTA
     def estado_derrota(self, eventos):

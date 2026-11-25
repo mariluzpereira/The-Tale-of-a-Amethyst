@@ -99,3 +99,10 @@ O combate só começa quando a última fala termina e a faixa some. Cada fala to
 * **Fadinha**: usa `fadinha (2).png` (ou `fadinha.png`); na casa dela ficou menor e perto da porta.
 * **Animação final**: `animacao_final(1..N).png` aparece numa moldura ao lado de "Obrigada por jogarem!".
 * `cenario_prologo.jpg` não veio no último zip: sem ele o prólogo usa a casa da fada como fundo.
+
+## Imagens leves (relógio da Meliah, gnomo, retratos)
+O relógio do poder da Meliah, os quadros do gnomo e os retratos vêm de `extras/`. Se essa pasta não
+existir, o jogo gera as versões leves sozinho na primeira abertura (a partir de
+`habilidade_congelar_tempo_relogio(1).png`, `gnomo_easter_egg.gif`, `*_sprite_dialogo(1).png`) e guarda em
+`extras/`. Para os quadros do gnomo é preciso o Pillow (`pip install pillow`); sem ele aparece um
+quadro só, dançando em pulinhos. Se nem o arquivo do relógio abrir, um relógio desenhado por código é usado.
